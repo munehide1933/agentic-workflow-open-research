@@ -87,6 +87,9 @@ See [Open-Source Boundary](./docs/architecture/open-source-boundary.md).
 - [Agentic Workflow Architecture (EN)](./docs/architecture/agentic-workflow.md)
 - [State-Machine Governance (EN)](./docs/architecture/state-machine-governance.md)
 - [Diagnosis Structure (EN)](./docs/architecture/diagnosis-structure.md)
+- [Runtime vNext Iteration Plan and Primary Design Goals (EN)](./docs/architecture/runtime-vnext-iteration-plan.md)
+- [Runtime vNext 迭代计划与主要设计目标（中文）](./docs/architecture/runtime-vnext-iteration-plan.zh.md)
+- [Runtime vNext イテレーション計画と主要設計目標（日本語）](./docs/architecture/runtime-vnext-iteration-plan.ja.md)
 
 ## Framework Notes
 

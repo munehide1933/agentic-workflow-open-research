@@ -79,6 +79,9 @@
 - [Agentic Workflow 架构（EN）](./docs/architecture/agentic-workflow.md)
 - [状态机治理（EN）](./docs/architecture/state-machine-governance.md)
 - [Diagnosis 结构（EN）](./docs/architecture/diagnosis-structure.md)
+- [Runtime vNext 迭代计划与主要设计目标（中文）](./docs/architecture/runtime-vnext-iteration-plan.zh.md)
+- [Runtime vNext Iteration Plan and Primary Design Goals (EN)](./docs/architecture/runtime-vnext-iteration-plan.md)
+- [Runtime vNext イテレーション計画と主要設計目標（日本語）](./docs/architecture/runtime-vnext-iteration-plan.ja.md)
 
 ## 其他说明
 
