@@ -1,57 +1,80 @@
 # Intelligent Agent Runtime（开源研究版）
 
-这个仓库是文档优先的公开版本，重点展示 Agentic Workflow 的工程方法，而非公开完整运行时代码。
+这个仓库是文档优先的公开版本，重点展示企业级 Agentic Workflow 的可靠性工程方法，而非公开完整运行时代码。
 
-## 核心观点
+## 核心定位
 
-企业场景下，不可控的对话系统不可用。
-可生产化的智能体必须具备：
+企业场景里最常见的失败不是模型智力不足，而是控制平面缺失：
 
-1. Evidence-First Diagnosis（证据优先诊断）
-2. Second-Pass Audit（二阶段审计）
-3. Anchor Guard（代码输出安全收口）
-4. 状态机驱动（可预测、可降级、可审计）
+- 缺少证据边界
+- 缺少独立审计
+- 缺少稳定输出契约
+- 缺少可执行安全收口与降级路径
 
-## 本仓库公开内容
+## 公开与非公开边界
 
-- 架构与流程设计文档
-- 诊断/审计契约 schema
-- 流程图（Mermaid）
-- 英文与日文深度技术文章
-- 可复现的伪代码
+公开内容：
 
-## 刻意不公开的内容
+- 架构规范与流程文档
+- 公开 JSON 契约（diagnosis/audit/SSE）
+- 三语文档（中/日/英）
+- 流程图与伪代码
 
-- 本地执行层（shell / 文件系统 / 系统调用）
-- 私有策略参数、敏感 prompt、生产环境配置
-- 与内部基础设施强耦合的实现细节
+非公开内容：
+
+- 本地执行层（shell/文件系统/系统调用）
+- 私有阈值、私有 prompt、生产部署细节
+- 与私有基础设施强耦合的记忆实现细节
 
 边界说明见 [Open-Source Boundary](./docs/architecture/open-source-boundary.md)。
 
-## 我实际已经实现的能力（不夸大）
+## 契约索引
 
-1. 多模式对话：`basic / deep_thinking / web_search`
-2. SSE 流式输出契约：区分 `status/content/final/error`，并保证最终答案一致性
-3. 诊断结构化：`facts / hypotheses / excluded_hypotheses / insufficient_evidence`
-4. 二阶段审计：对草稿做独立复核，并在超时或异常时安全降级
-5. Anchor Guard：锚点不完整时禁止输出高风险单栈可执行代码
-6. 代码产物质量门：语法检查、危险模式扫描、分级降级
-7. 记忆与会话：SQLite（短期）+ Qdrant（可选长期）+ 会话回滚
-8. 工程稳定性：WAL、重试、日志、限流、可选自动备份
+- [公共契约索引](./examples/contracts/README.md)
+- [Diagnosis Structure Schema](./examples/contracts/diagnosis-structure.schema.json)
+- [Second-Pass Audit Schema v1](./examples/contracts/second-pass-audit.schema.json)
+- [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
+- [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
 
-## 这些能力能解决的客户问题
+## 已实现能力（不夸大）
 
-- 线上故障定位时，回答“看起来合理但不可验证”
-- 模型在证据不足时仍给出强结论
-- 代码建议缺少运行时前提，交付后难落地
-- 回答流程不可审计，复盘成本高
-- 输出格式不稳定，前端和下游系统难对接
+1. 多模式路由：`basic / deep_thinking / web_search`
+2. SSE 契约化输出：`status/content/final/error`
+3. 结构化诊断与显式不确定性
+4. 二阶段审计 + non-echo 检查 + safe degrade/partial salvage
+5. Anchor Guard 锚点评分与分级收口
+6. Quality Gate 三档决策：`pass/soft_fail/hard_fail`
+7. 记忆体系：SQLite + 可选 Qdrant + run 级回滚
+8. 状态机双终态：`S_FAIL_RETRYABLE / S_FAIL_TERMINAL`
 
-## 更完整说明
+## 架构规范文档（中/日/英同步）
+
+- [SSE 响应契约（中文）](./docs/architecture/sse-response-contract.zh.md)
+- [SSE Response Contract (EN)](./docs/architecture/sse-response-contract.md)
+- [SSE レスポンス契約（日本語）](./docs/architecture/sse-response-contract.ja.md)
+- [Second-Pass Audit 合并策略（中文）](./docs/architecture/second-pass-audit-merge-policy.zh.md)
+- [Second-Pass Audit Merge Policy (EN)](./docs/architecture/second-pass-audit-merge-policy.md)
+- [Second-Pass Audit マージポリシー（日本語）](./docs/architecture/second-pass-audit-merge-policy.ja.md)
+- [路由与模式选择规范（中文）](./docs/architecture/routing-mode-selection.zh.md)
+- [Routing and Mode Selection (EN)](./docs/architecture/routing-mode-selection.md)
+- [ルーティングとモード選択仕様（日本語）](./docs/architecture/routing-mode-selection.ja.md)
+- [Quality Gate 规则框架（中文）](./docs/architecture/quality-gate-framework.zh.md)
+- [Quality Gate Framework (EN)](./docs/architecture/quality-gate-framework.md)
+- [Quality Gate ルールフレームワーク（日本語）](./docs/architecture/quality-gate-framework.ja.md)
+- [错误分类与可观测性规范（中文）](./docs/architecture/error-taxonomy-observability.zh.md)
+- [Error Taxonomy and Observability (EN)](./docs/architecture/error-taxonomy-observability.md)
+- [エラー分類と可観測性仕様（日本語）](./docs/architecture/error-taxonomy-observability.ja.md)
+- [Memory 层架构规范（中文）](./docs/architecture/memory-architecture.zh.md)
+- [Memory Architecture (EN)](./docs/architecture/memory-architecture.md)
+- [Memory レイヤー仕様（日本語）](./docs/architecture/memory-architecture.ja.md)
+- [状态机完整转移矩阵（中文）](./docs/architecture/state-machine-transition-matrix.zh.md)
+- [State Machine Transition Matrix (EN)](./docs/architecture/state-machine-transition-matrix.md)
+- [状態機械の完全遷移行列（日本語）](./docs/architecture/state-machine-transition-matrix.ja.md)
+- [可靠性 Benchmark 方法论（中文）](./docs/architecture/benchmark-methodology.zh.md)
+- [Benchmark Methodology (EN)](./docs/architecture/benchmark-methodology.md)
+- [信頼性 Benchmark 方法論（日本語）](./docs/architecture/benchmark-methodology.ja.md)
+
+## 其他说明
 
 - [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
 - [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
-- [Diagnosis Structure：Evidence-First（EN）](./docs/papers/diagnosis-structure.evidence-first.en.md)
-- [Diagnosis Structure：Evidence-First（日文）](./docs/papers/diagnosis-structure.evidence-first.ja.md)
-- [Anchor Guard：Reliable Codegen（EN）](./docs/papers/anchor-guard.reliable-codegen.en.md)
-- [Anchor Guard：Reliable Codegen（日文）](./docs/papers/anchor-guard.reliable-codegen.ja.md)

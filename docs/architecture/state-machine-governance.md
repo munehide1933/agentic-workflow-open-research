@@ -3,7 +3,7 @@
 ## Thesis
 
 In enterprise environments, uncontrolled dialogue systems are operationally unsafe.
-A reliable agent must be governed by explicit states, transitions, and downgrade rules.
+A reliable agent must be governed by explicit states, transitions, concurrency semantics, and fail classes.
 
 ## State Set
 
@@ -14,15 +14,23 @@ A reliable agent must be governed by explicit states, transitions, and downgrade
 - `S4_AUDIT_READY`
 - `S5_FINAL_READY`
 - `S6_RENDERED`
-- `S_FAIL_SAFE`
+- `S_FAIL_RETRYABLE`
+- `S_FAIL_TERMINAL`
 
-## Transition Guards
+## Core Guards
 
-- `S1 -> S2`: only if problem requires diagnosis and minimum observability exists.
-- `S2 -> S3`: only if diagnosis schema is parseable.
-- `S3 -> S4`: only for eligible domains or high-risk requests.
-- `S4 -> S5`: only with valid audit payload.
-- Any state -> `S_FAIL_SAFE`: on schema failure, timeout, missing anchors, or policy violations.
+- `S1 -> S2`: diagnosis required and minimum observability exists.
+- `S2 -> S3`: diagnosis schema is parseable.
+- `S3 -> S4`: audit eligible request.
+- `S4 -> S5`: audit valid or partial salvage allowed by policy.
+- `S6 -> S0`: same-session re-entry on new user input.
+- Any non-terminal state -> `S_FAIL_RETRYABLE`: timeout or transient upstream failure.
+- Any non-terminal state -> `S_FAIL_TERMINAL`: schema violation, policy hard block, unrecoverable failure.
+
+## Concurrency Rule
+
+Single-flight per session is required.
+Concurrent same-session requests must fail fast with `E_CONCURRENCY_CONFLICT`.
 
 ## Degradation Strategy
 
@@ -33,6 +41,6 @@ When confidence is unproven:
 3. prohibit executable high-risk code
 4. output verification-first guidance
 
-This is not "less intelligent."
-It is deliberate reliability engineering.
+## Transition Matrix
 
+See [State Machine Transition Matrix](./state-machine-transition-matrix.md) for exhaustive legal and forbidden edges.

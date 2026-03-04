@@ -113,7 +113,8 @@ Example transition contract:
 
 - `UNDERSTAND_READY -> DIAGNOSIS_READY` only when diagnosis prerequisites hold.
 - `DRAFT_READY -> AUDIT_READY` only for eligible/high-risk tasks.
-- Any stage -> `FAIL_SAFE` on timeout, schema invalidity, or policy violation.
+- Any stage -> `S_FAIL_RETRYABLE` on timeout/transient failure.
+- Any stage -> `S_FAIL_TERMINAL` on schema invalidity or policy hard block.
 
 This makes failure behavior explainable and bounded.
 

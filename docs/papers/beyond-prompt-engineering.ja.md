@@ -106,7 +106,8 @@ Second pass は単なる言い換えではありません。
 
 - `UNDERSTAND_READY -> DIAGNOSIS_READY`: 診断前提が満たされる場合のみ
 - `DRAFT_READY -> AUDIT_READY`: 高リスク/対象ドメイン時のみ
-- 任意状態 -> `FAIL_SAFE`: timeout, schema 不整合, policy 違反
+- 任意状態 -> `S_FAIL_RETRYABLE`: timeout または一時障害
+- 任意状態 -> `S_FAIL_TERMINAL`: schema 不整合または policy hard block
 
 これにより、失敗は不可解な暴走ではなく、説明可能な劣化動作になります。
 

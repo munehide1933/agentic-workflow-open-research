@@ -2,41 +2,51 @@
 
 ```python
 def run_agent(query: str, context: dict) -> dict:
-    state = normalize_input(query, context)
+    if is_session_inflight(context["session_id"]):
+        return render_error(
+            code="E_CONCURRENCY_CONFLICT",
+            retryable=True,
+            state="S_FAIL_RETRYABLE",
+        )
 
-    understanding = understand(state)
+    state = normalize_input(query, context)  # S0
+
+    understanding = understand(state)  # S1
     state["understanding"] = understanding
 
     if not understanding.requires_diagnosis:
-        draft = generate_direct_answer(state)
-        return finalize_and_render(draft, state)
-
-    diagnosis = build_diagnosis_structure(state)
-    state["diagnosis"] = diagnosis
-
-    if diagnosis.insufficient_evidence:
-        draft = build_verification_first_draft(state)
+        draft = generate_direct_answer(state)  # S3
     else:
-        draft = synthesize_draft(state)
+        diagnosis = build_diagnosis_structure(state)  # S2
+        state["diagnosis"] = diagnosis
 
-    if should_apply_anchor_guard(state):
-        draft = enforce_anchor_guard(draft, state)
+        if diagnosis.insufficient_evidence:
+            draft = build_verification_first_draft(state)
+        else:
+            draft = synthesize_draft(state)  # S3
+
+    anchor_score = compute_anchor_score(state)
+    draft = enforce_anchor_guard_by_score(draft, anchor_score)
 
     if should_run_second_pass(state):
-        audit = run_second_pass_audit(draft, diagnosis, state)
-        if is_valid_audit(audit):
-            final_text = merge_draft_with_audit(draft, audit, state)
+        audit = run_second_pass_audit(draft, state.get("diagnosis"), state)  # S4
+        audit_valid = is_valid_audit(audit)
+
+        if audit_valid and audit.get("audit_completeness") == "full":
+            final_text = merge_draft_with_audit(draft, audit, state)  # S5
+        elif audit_valid and audit.get("audit_completeness") == "partial":
+            final_text = merge_partial_salvage(draft, audit, state)  # S5
         else:
             final_text = safe_degrade(draft, reason="invalid_or_partial_audit")
     else:
-        final_text = draft
+        final_text = draft  # S5
 
-    return render_with_contract(final_text, state)
+    gated = apply_quality_gate(final_text, state)
+    return render_with_contract(gated, state)  # S6
 ```
 
 ## Notes
 
-- The public pseudocode intentionally omits production policy constants.
-- Runtime operators and local execution internals are excluded.
-- The goal is to show engineering method, not private implementation.
-
+- Modes are `basic`, `deep_thinking`, and `web_search`.
+- Fail states are split into `S_FAIL_RETRYABLE` and `S_FAIL_TERMINAL`.
+- Public pseudocode omits private policy constants and local execution internals.

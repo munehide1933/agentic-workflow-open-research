@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/sse-event.schema.v1.json",
+  "title": "SSEEventEnvelopeV1",
+  "type": "object",
+  "required": [
+    "event_type",
+    "trace_id",
+    "run_id",
+    "session_id",
+    "seq",
+    "ts",
+    "payload",
+    "terminal"
+  ],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": ["status", "content", "final", "error"]
+    },
+    "trace_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    },
+    "terminal": {
+      "type": "boolean"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "event_type": { "const": "status" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "terminal": { "const": false },
+          "payload": {
+            "type": "object",
+            "required": ["phase", "code", "message"],
+            "properties": {
+              "phase": {
+                "type": "string",
+                "enum": ["understand", "diagnose", "draft", "audit", "finalize", "render"]
+              },
+              "code": { "type": "string", "minLength": 1 },
+              "message": { "type": "string", "minLength": 1 },
+              "progress": { "type": "number", "minimum": 0, "maximum": 1 },
+              "retryable": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "content" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "terminal": { "const": false },
+          "payload": {
+            "type": "object",
+            "required": ["delta"],
+            "properties": {
+              "delta": { "type": "string" },
+              "channel": { "type": "string", "enum": ["text", "artifact"] },
+              "artifact_id": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "final" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "terminal": { "const": true },
+          "payload": {
+            "type": "object",
+            "required": ["answer"],
+            "properties": {
+              "answer": { "type": "string" },
+              "artifacts": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "quality_gate_result": {
+                "type": "string",
+                "enum": ["pass", "soft_fail", "hard_fail"]
+              },
+              "degraded": { "type": "boolean" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "event_type": { "const": "error" } },
+        "required": ["event_type"]
+      },
+      "then": {
+        "properties": {
+          "terminal": { "const": true },
+          "payload": {
+            "type": "object",
+            "required": ["error_code", "error_message", "retryable"],
+            "properties": {
+              "error_code": { "type": "string", "pattern": "^E_[A-Z_]+$" },
+              "error_message": { "type": "string", "minLength": 1 },
+              "retryable": { "type": "boolean" },
+              "phase": {
+                "type": "string",
+                "enum": ["understand", "diagnose", "draft", "audit", "finalize", "render"]
+              },
+              "details": { "type": "object" }
+            },
+            "additionalProperties": true
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

@@ -10,7 +10,10 @@ Convert free-text problem statements into a diagnosis artifact that is testable 
 - `hypotheses`: ranked causal candidates with confidence and executable tests
 - `excluded_hypotheses`: alternatives that are ruled out
 - `insufficient_evidence`: explicit uncertainty signal
-- `required_fields`: minimum missing observations to proceed confidently
+- `required_fields`: missing observations required to raise diagnostic confidence
+
+`required_fields` is an output field in the diagnosis artifact.
+It is not an input validation schema for user requests.
 
 ## Invariants
 
@@ -18,10 +21,10 @@ Convert free-text problem statements into a diagnosis artifact that is testable 
 2. Every hypothesis must include a concrete test.
 3. If evidence is insufficient, primary-candidate certainty is prohibited.
 4. Excluded hypotheses must be explainable via available evidence.
+5. `required_fields` must be actionable and observable.
 
 ## Engineering Value
 
 - improves consistency in incident-oriented reasoning
 - enables deterministic audit checks
 - creates clear handoff between diagnosis and final synthesis
-

@@ -1,57 +1,81 @@
 # Intelligent Agent Runtime（公開研究版）
 
-このリポジトリは、エンタープライズ向けエージェント実装の「設計思想と工学手法」を公開するための文書中心版です。
-中核アルゴリズムやローカル実行レイヤーの機密実装は含みません。
+このリポジトリは、エンタープライズ向け Agentic Workflow の信頼性設計を公開する文書中心版です。
+機密ランタイム実装は含みません。
 
-## 目的
+## 基本方針
 
-「よく話せる」だけの対話システムは本番運用で破綻します。
-本番で必要なのは、次の4点です。
+本番障害の主要因はモデル能力不足ではなく制御面の欠落です。
 
-1. Evidence-First Diagnosis（証拠優先の診断）
-2. Second-Pass Audit（独立監査による再評価）
-3. Anchor Guard（コード出力の安全境界）
-4. 状態機械ベースの制御（明示的遷移と劣化戦略）
+- 証拠境界がない
+- 独立監査がない
+- 出力契約が不安定
+- 安全ゲートと劣化経路が不明確
 
-## 公開内容
+## 公開/非公開境界
 
-- アーキテクチャ文書
-- 診断・監査の契約スキーマ
-- フローダイアグラム（Mermaid）
-- 技術論文（英語/日本語）
-- 実装擬似コード
+公開：
 
-## 非公開内容
+- アーキテクチャ仕様とワークフロー文書
+- JSON 契約（diagnosis/audit/SSE）
+- 日中英の同期文書
+- フローダイアグラムと擬似コード
+
+非公開：
 
 - ローカル実行層（shell/filesystem/system call）
-- 本番向けポリシー閾値と秘密プロンプト
-- private infra 依存のメモリ実装詳細
+- 私有閾値、秘密プロンプト、運用設定
+- private infra 依存メモリ実装詳細
 
-詳細は [Open-Source Boundary](./docs/architecture/open-source-boundary.md) を参照してください。
+詳細は [Open-Source Boundary](./docs/architecture/open-source-boundary.md)。
 
-## 実装済み機能（誇張なし）
+## 契約インデックス
 
-1. 対話モード: `basic / deep_thinking / web_search`
-2. SSE 契約: `status/content/final/error` の明示分離
-3. 診断構造化: `facts / hypotheses / excluded_hypotheses / insufficient_evidence`
-4. 二段階監査: ドラフト再評価と安全劣化
-5. Anchor Guard: アンカー不足時の高リスクコード抑制
-6. 品質ゲート: 構文・危険パターン検査と段階的フォールバック
-7. セッション/記憶: SQLite + （任意）Qdrant
-8. 運用基盤: WAL、リトライ、ログ、レート制限、任意バックアップ
+- [Public Contract Index](./examples/contracts/README.md)
+- [Diagnosis Structure Schema](./examples/contracts/diagnosis-structure.schema.json)
+- [Second-Pass Audit Schema v1](./examples/contracts/second-pass-audit.schema.json)
+- [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
+- [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
 
-## 顧客課題への対応
+## 実装済み能力（誇張なし）
 
-- 監査しにくい障害解析回答
-- 根拠不足でも断定する応答
-- 前提不足のコード提案
-- 不安定なストリーム出力による統合難
+1. ルーティングモード：`basic / deep_thinking / web_search`
+2. SSE 契約化出力：`status/content/final/error`
+3. 構造化診断と明示的不確実性
+4. second pass + non-echo 判定 + safe degrade/partial salvage
+5. Anchor Guard のアンカースコアリング
+6. Quality Gate の三段階判定：`pass/soft_fail/hard_fail`
+7. メモリ層：SQLite + optional Qdrant + run 単位ロールバック
+8. 状態機械 fail 分割：`S_FAIL_RETRYABLE / S_FAIL_TERMINAL`
 
-## 追加ドキュメント
+## アーキテクチャ仕様（日中英同期）
+
+- [SSE レスポンス契約（日本語）](./docs/architecture/sse-response-contract.ja.md)
+- [SSE Response Contract (EN)](./docs/architecture/sse-response-contract.md)
+- [SSE 响应契约（中文）](./docs/architecture/sse-response-contract.zh.md)
+- [Second-Pass Audit マージポリシー（日本語）](./docs/architecture/second-pass-audit-merge-policy.ja.md)
+- [Second-Pass Audit Merge Policy (EN)](./docs/architecture/second-pass-audit-merge-policy.md)
+- [Second-Pass Audit 合并策略（中文）](./docs/architecture/second-pass-audit-merge-policy.zh.md)
+- [ルーティングとモード選択仕様（日本語）](./docs/architecture/routing-mode-selection.ja.md)
+- [Routing and Mode Selection (EN)](./docs/architecture/routing-mode-selection.md)
+- [路由与模式选择规范（中文）](./docs/architecture/routing-mode-selection.zh.md)
+- [Quality Gate ルールフレームワーク（日本語）](./docs/architecture/quality-gate-framework.ja.md)
+- [Quality Gate Framework (EN)](./docs/architecture/quality-gate-framework.md)
+- [Quality Gate 规则框架（中文）](./docs/architecture/quality-gate-framework.zh.md)
+- [エラー分類と可観測性仕様（日本語）](./docs/architecture/error-taxonomy-observability.ja.md)
+- [Error Taxonomy and Observability (EN)](./docs/architecture/error-taxonomy-observability.md)
+- [错误分类与可观测性规范（中文）](./docs/architecture/error-taxonomy-observability.zh.md)
+- [Memory レイヤー仕様（日本語）](./docs/architecture/memory-architecture.ja.md)
+- [Memory Architecture (EN)](./docs/architecture/memory-architecture.md)
+- [Memory 层架构规范（中文）](./docs/architecture/memory-architecture.zh.md)
+- [状態機械の完全遷移行列（日本語）](./docs/architecture/state-machine-transition-matrix.ja.md)
+- [State Machine Transition Matrix (EN)](./docs/architecture/state-machine-transition-matrix.md)
+- [状态机完整转移矩阵（中文）](./docs/architecture/state-machine-transition-matrix.zh.md)
+- [信頼性 Benchmark 方法論（日本語）](./docs/architecture/benchmark-methodology.ja.md)
+- [Benchmark Methodology (EN)](./docs/architecture/benchmark-methodology.md)
+- [可靠性 Benchmark 方法论（中文）](./docs/architecture/benchmark-methodology.zh.md)
+
+## 補足
 
 - [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
 - [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
-- [Diagnosis Structure（EN）](./docs/papers/diagnosis-structure.evidence-first.en.md)
-- [Diagnosis Structure（日本語版）](./docs/papers/diagnosis-structure.evidence-first.ja.md)
-- [Anchor Guard（EN）](./docs/papers/anchor-guard.reliable-codegen.en.md)
-- [Anchor Guard（日本語版）](./docs/papers/anchor-guard.reliable-codegen.ja.md)
