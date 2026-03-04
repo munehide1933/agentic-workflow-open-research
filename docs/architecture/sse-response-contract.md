@@ -55,7 +55,8 @@ Required payload fields:
 Optional payload fields:
 
 - `channel`: `text | artifact`
-- `artifact_id`: identifier when `channel=artifact`
+- `artifact_id`: identifier when `channel=artifact` (required in that case)
+- `chunk_index`: integer chunk sequence for artifact stream
 
 `content` is non-terminal (`terminal=false`).
 
@@ -92,7 +93,26 @@ Optional payload fields:
 
 `error` must be terminal (`terminal=true`).
 
-## 4. Ordering and Timeout Semantics
+## 4. Artifact Channel Semantics
+
+When `content.payload.channel=artifact`:
+
+1. `artifact_id` is mandatory.
+2. Consumers should buffer chunks keyed by `artifact_id`.
+3. `chunk_index` should be monotonic per `artifact_id` when present.
+
+When `final.payload.artifacts` is present:
+
+1. each entry must include `artifact_id`
+2. each streamed `artifact_id` must appear exactly once in `final.payload.artifacts`
+3. each artifact entry should include terminal status (`complete | partial | blocked`)
+
+Consumer integration rule:
+
+- `content` events provide incremental artifact payload.
+- `final.payload.artifacts` is authoritative metadata and completion signal.
+
+## 5. Ordering and Timeout Semantics
 
 Allowed event order:
 
@@ -105,7 +125,7 @@ Additional rules:
 3. A stage timeout should emit `status` with `code=timeout_warning` first when possible.
 4. Terminal timeout must emit `error` with `error_code=E_TIMEOUT_STAGE_*`.
 
-## 5. Validation and Rejection Rules
+## 6. Validation and Rejection Rules
 
 Consumers should reject or quarantine a stream when any of the following occurs:
 
@@ -114,16 +134,19 @@ Consumers should reject or quarantine a stream when any of the following occurs:
 3. Multiple terminal events appear.
 4. Event payload does not match its declared `event_type`.
 5. Event appears after terminal.
+6. `content.channel=artifact` without `artifact_id`.
+7. Streamed `artifact_id` missing from `final.payload.artifacts`.
 
-## 6. Compatibility and Versioning
+## 7. Compatibility and Versioning
 
 - Version: `v1`
 - JSON Schema: [`examples/contracts/sse-event.schema.v1.json`](../../examples/contracts/sse-event.schema.v1.json)
 - Backward-compatibility rule: additive optional fields are allowed in minor updates.
 
-## 7. Acceptance Scenarios
+## 8. Acceptance Scenarios
 
 1. Normal stream: `status -> content -> content -> final`.
 2. Timeout stream: `status(timeout_warning) -> error(E_TIMEOUT_STAGE_AUDIT)`.
 3. Early schema failure: `status -> error(E_SCHEMA_INVALID_PAYLOAD)`.
-4. Invalid case (for negative test): duplicate terminal event.
+4. Artifact stream: `content(channel=artifact,artifact_id=A1)* -> final(artifacts includes A1)`.
+5. Invalid case (for negative test): duplicate terminal event.

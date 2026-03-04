@@ -45,12 +45,37 @@ If `audit_completeness` is absent (v1), infer from content quality:
 
 ### 5.1 Non-echo Check
 
-Default open thresholds (replaceable in private deployments):
+Default open thresholds:
 
 - lexical overlap ratio `< 0.85`
 - semantic similarity `< 0.92`
 
-If both thresholds fail, audit is treated as echo and merge is rejected.
+#### 5.1.1 Lexical Overlap Method
+
+- normalize text to lowercase
+- remove punctuation
+- tokenize on whitespace
+- compute Jaccard overlap over token sets
+
+#### 5.1.2 Semantic Similarity Method
+
+Default backend for reproducibility:
+
+- embedding model: `sentence-transformers/all-MiniLM-L6-v2`
+- embedding pooling: model default sentence embedding
+- similarity: cosine similarity on L2-normalized vectors
+- draft comparison text: normalized `draft` answer body
+- audit comparison text: normalized concatenation of `counter_hypotheses`, `missing_evidence`, `unsafe_recommendations`, `structure_inconsistencies`
+
+Normalization for semantic input is shared with lexical method (lowercase + punctuation removal + whitespace collapse).
+
+If alternative embedding model is used:
+
+1. report model ID in benchmark metadata
+2. recalibrate semantic threshold on a fixed calibration set
+3. publish recalibrated threshold with results
+
+If both lexical and semantic thresholds fail, audit is treated as echo and merge is rejected.
 
 ### 5.2 Challenge Quality Check
 

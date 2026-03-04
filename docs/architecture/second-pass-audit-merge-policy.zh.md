@@ -45,12 +45,37 @@ v1 schema 中 `counter_hypotheses.minItems = 1` 是历史兼容约束。
 
 ### 5.1 non-echo 检查
 
-公开默认阈值（可在私有部署替换）：
+公开默认阈值：
 
 - 词面重叠率 `< 0.85`
 - 语义相似度 `< 0.92`
 
-若两项阈值均未通过，则判定为 echo，拒绝合并。
+#### 5.1.1 词面重叠计算方法
+
+- 文本转小写
+- 去除标点
+- 按空白分词
+- 在 token 集上计算 Jaccard 重叠
+
+#### 5.1.2 语义相似度计算方法
+
+默认可复现后端：
+
+- 嵌入模型：`sentence-transformers/all-MiniLM-L6-v2`
+- 向量：模型默认句向量
+- 相似度：L2 归一后余弦相似度
+- draft 对比文本：归一化后的 `draft` 主体答案
+- audit 对比文本：`counter_hypotheses`、`missing_evidence`、`unsafe_recommendations`、`structure_inconsistencies` 归一化后拼接
+
+语义输入归一化与词面方法一致（小写化 + 去标点 + 空白折叠）。
+
+若使用其他嵌入模型：
+
+1. 在 benchmark 元数据中声明模型 ID
+2. 基于固定校准集重标定语义阈值
+3. 随结果公开标定后的阈值
+
+若词面和语义两项阈值均不满足，则判定为 echo，拒绝合并。
 
 ### 5.2 挑战质量检查
 

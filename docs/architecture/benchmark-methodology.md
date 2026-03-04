@@ -16,11 +16,25 @@ Recommended buckets:
 
 Recommended minimum size: 500 tasks total, stratified across buckets.
 
-## 3. Baseline Groups
+## 3. Baseline and Ablation Profiles
 
-- `prompt_only`: no diagnosis structure, no second pass, no guard system
-- `diagnosis_only`: diagnosis structure enabled, no second pass, no anchor/quality gate coupling
-- `full_pipeline`: diagnosis + second pass + anchor guard + quality gate + state-machine governance
+Use a component-matrix design so each major control can be isolated.
+
+| Profile | Diagnosis | Second Pass | Anchor Guard | Quality Gate | State Machine |
+|---|---|---|---|---|---|
+| `prompt_only` | off | off | off | off | off |
+| `diagnosis_only` | on | off | off | off | on |
+| `diagnosis_plus_audit` | on | on | off | off | on |
+| `full_no_anchor_guard` | on | on | off | on | on |
+| `full_no_quality_gate` | on | on | on | off | on |
+| `full_no_second_pass` | on | off | on | on | on |
+| `full_pipeline` | on | on | on | on | on |
+
+Required reporting:
+
+1. absolute metric values per profile
+2. delta vs `full_pipeline`
+3. per-component attribution discussion based on ablation deltas
 
 ## 4. Metric Definitions
 
@@ -32,6 +46,14 @@ Recommended minimum size: 500 tasks total, stratified across buckets.
 
 `non_echo_audits / valid_audits`
 
+Non-echo computation must follow second-pass merge-policy method:
+
+- lexical overlap threshold `< 0.85`
+- semantic similarity threshold `< 0.92`
+- default embedding backend `sentence-transformers/all-MiniLM-L6-v2`
+
+If a different embedding backend is used, report model ID and recalibrated threshold.
+
 3. Unsafe Output Suppression
 
 `blocked_or_degraded_under_missing_anchors / risky_code_requests_with_missing_anchors`
@@ -40,7 +62,7 @@ Recommended minimum size: 500 tasks total, stratified across buckets.
 
 `correct_fallback_runs / runs_that_should_degrade`
 
-Where `runs_that_should_degrade = count(runs where degrade_oracle.should_degrade = true)`.
+Where `runs_that_should_degrade = count(runs where oracle_should_degrade=true)`.
 
 5. Final Consistency
 
@@ -48,50 +70,65 @@ Where `runs_that_should_degrade = count(runs where degrade_oracle.should_degrade
 
 ## 5. Degrade Oracle (Machine-Executable)
 
-Define:
+### 5.1 Predicate Definition
 
-`should_degrade = (diagnosis.insufficient_evidence) OR (requires_executable AND anchor_score < 0.80) OR (audit_invalid_or_echo_or_weak) OR (quality_gate in {soft_fail, hard_fail}) OR (state in {S_FAIL_RETRYABLE, S_FAIL_TERMINAL})`
+`oracle_should_degrade = p1 OR p2 OR p3 OR p4 OR p5`
 
-`oracle_reason` is a multi-label set with values:
+- `p1 = diagnosis.insufficient_evidence`
+- `p2 = requires_executable AND anchor_score < 0.80`
+- `p3 = audit_status in {invalid, echo, weak}`
+- `p4 = quality_gate_result in {soft_fail, hard_fail}`
+- `p5 = terminal_state in {S_FAIL_RETRYABLE, S_FAIL_TERMINAL}`
 
-- `insufficient_evidence`
-- `missing_anchor`
-- `invalid_audit`
-- `weak_audit`
-- `quality_gate_fail`
-- `fail_state`
+`oracle_reason` is a multi-label set:
 
-Oracle output fields per run:
+- `insufficient_evidence` for `p1`
+- `missing_anchor` for `p2`
+- `invalid_audit` for `p3` with `audit_status in {invalid, echo}`
+- `weak_audit` for `p3` with `audit_status=weak`
+- `quality_gate_fail` for `p4`
+- `fail_state` for `p5`
 
-- `oracle_should_degrade`: boolean
-- `oracle_reason`: array of reason labels
+### 5.2 Ground-Truth Source for `runs_that_should_degrade`
+
+To avoid manual labeling ambiguity, degrade oracle labels are generated from a fixed reference run:
+
+1. execute each task once with `full_pipeline` reference profile.
+2. extract oracle predicates from persisted artifacts.
+3. write `oracle_should_degrade` and `oracle_reason` into dataset label columns.
+4. freeze these labels for all baseline comparisons.
+
+This frozen label set is the denominator source for `runs_that_should_degrade`.
 
 ## 6. Measurement Protocol
 
 1. Freeze dataset split and prompts.
-2. Run each baseline with identical request set.
-3. Persist raw events, diagnosis artifacts, audit payloads, and final outputs.
-4. Compute metrics and degrade oracle labels from persisted artifacts only.
-5. Report confidence intervals when sample size allows.
+2. Generate oracle labels from reference `full_pipeline` run and persist them.
+3. Run each baseline profile with identical request set.
+4. Persist raw events, diagnosis artifacts, audit payloads, and final outputs.
+5. Compute metrics from persisted artifacts and frozen oracle labels only.
+6. Report confidence intervals when sample size allows.
 
 ## 7. Dataset Specification
 
-See [`examples/contracts/benchmark-dataset-spec.md`](../../examples/contracts/benchmark-dataset-spec.md) for minimum columns and sample records.
+See [`examples/contracts/benchmark-dataset-spec.md`](../../examples/contracts/benchmark-dataset-spec.md) for required columns and example records.
 
 ## 8. Reporting Template
 
 Minimum report content:
 
 - dataset definition and sampling method
-- baseline configurations
+- profile matrix and toggles
 - metric table with formulas
-- degrade oracle criteria and reason distribution
+- oracle rule and reason distribution
+- ablation deltas vs `full_pipeline`
 - failure mode examples
 - reproducibility checklist
 
 ## 9. Acceptance Criteria
 
-1. Metric formulas are machine-verifiable.
-2. `runs_that_should_degrade` is derived by deterministic oracle logic.
-3. Dataset and splits are versioned.
-4. Re-run by another team yields same metric logic and comparable trend.
+1. metric formulas are machine-verifiable.
+2. `runs_that_should_degrade` comes from deterministic frozen oracle labels.
+3. profile toggles are fully declared.
+4. dataset and splits are versioned.
+5. re-run by another team yields same logic and comparable trend.

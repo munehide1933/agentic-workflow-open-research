@@ -55,7 +55,8 @@
 任意ペイロード：
 
 - `channel`: `text | artifact`
-- `artifact_id`: `channel=artifact` 時の識別子
+- `artifact_id`: `channel=artifact` 時の識別子（この場合必須）
+- `chunk_index`: artifact 分割番号
 
 `content` は非終端（`terminal=false`）です。
 
@@ -92,7 +93,26 @@
 
 `error` は終端（`terminal=true`）です。
 
-## 4. 順序とタイムアウト意味論
+## 4. Artifact チャネル意味論
+
+`content.payload.channel=artifact` の場合：
+
+1. `artifact_id` は必須。
+2. 消費側は `artifact_id` 単位でチャンクをバッファする。
+3. `chunk_index` がある場合、同一 `artifact_id` 内で単調増加が必要。
+
+`final.payload.artifacts` が存在する場合：
+
+1. 各要素は `artifact_id` を必須とする。
+2. ストリームで現れたすべての `artifact_id` は `final.payload.artifacts` に 1 回だけ出現する。
+3. 各要素は終端状態 `status`（`complete | partial | blocked`）を持つべき。
+
+消費側の統合ルール：
+
+- `content` は artifact 本体の増分受信。
+- `final.payload.artifacts` は確定メタデータと完了シグナル。
+
+## 5. 順序とタイムアウト意味論
 
 許可される順序：
 
@@ -105,7 +125,7 @@
 3. ステージタイムアウト時は可能なら先に `status(code=timeout_warning)` を送る。
 4. 終端タイムアウトは `error(error_code=E_TIMEOUT_STAGE_*)` を必須とする。
 
-## 5. バリデーションと拒否条件
+## 6. バリデーションと拒否条件
 
 次のいずれかが発生したストリームは拒否または隔離対象です。
 
@@ -114,16 +134,19 @@
 3. 終端イベントの重複。
 4. `event_type` と `payload` の不整合。
 5. 終端後の追加イベント。
+6. `content.channel=artifact` なのに `artifact_id` がない。
+7. ストリームに出た `artifact_id` が `final.payload.artifacts` に存在しない。
 
-## 6. バージョンと互換性
+## 7. バージョンと互換性
 
 - バージョン: `v1`
 - JSON Schema: [`examples/contracts/sse-event.schema.v1.json`](../../examples/contracts/sse-event.schema.v1.json)
 - 後方互換ルール: マイナー更新では任意フィールドの追加のみ許可。
 
-## 7. 受け入れシナリオ
+## 8. 受け入れシナリオ
 
 1. 正常: `status -> content -> content -> final`
 2. タイムアウト: `status(timeout_warning) -> error(E_TIMEOUT_STAGE_AUDIT)`
 3. 早期 schema 失敗: `status -> error(E_SCHEMA_INVALID_PAYLOAD)`
-4. 負例: 終端イベントの二重送信
+4. artifact ストリーム: `content(channel=artifact,artifact_id=A1)* -> final(artifacts に A1 を含む)`
+5. 負例: 終端イベントの二重送信

@@ -33,10 +33,27 @@
 
 `active_weights` には `not_applicable` 以外の次元のみを含める。
 
-### HTTP 条件ルール
+## HTTP 次元の適用判定（操作化）
 
-`http_client` は、要求がスタック依存 HTTP 詳細を必要とする場合のみスコアに含める。
-不要な場合は `http_client=not_applicable` とする。
+`http_client` は `http_dimension_applicable=true` の場合のみ評価対象とする。
+このフラグは理解ステージで算出し、ルート状態に保存しなければならない。
+
+デフォルト決定則：
+
+`http_dimension_applicable = requires_executable AND (intent_type in {codegen, ops, diagnosis}) AND has_http_scope_signal`
+
+次のいずれかを満たすと `has_http_scope_signal=true`：
+
+1. 外部 API 呼び出しロジックの生成または修正を要求している。
+2. スタック依存 HTTP 挙動（`headers`、`status`、`retry`、`timeout`、`proxy`、`auth signing`、`TLS`）を要求している。
+3. デプロイ文脈に API gateway/webhook/service integration 制約がある。
+
+いずれも満たさない場合は `http_client=not_applicable` とし、分母から重みを除外する。
+
+### 判定例
+
+- `intent_type=codegen`、`requires_executable=true`、課題が「webhook retry client を実装」 -> 適用。
+- `intent_type=architecture`、`requires_executable=false`、課題が「pub/sub パターン比較」 -> 非適用。
 
 ## 次元判定基準（公開デフォルト）
 

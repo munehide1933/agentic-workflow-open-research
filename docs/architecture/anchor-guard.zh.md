@@ -33,10 +33,27 @@
 
 其中 `active_weights` 仅包含不为 `not_applicable` 的维度。
 
-### HTTP 条件规则
+## HTTP 维度触发规则（操作化）
 
-只有当请求需要栈相关 HTTP 细节时，`http_client` 才纳入评分。
-若不需要栈相关 HTTP 细节，应将 `http_client=not_applicable`。
+仅当 `http_dimension_applicable=true` 时纳入 `http_client`。
+该标记必须在理解阶段计算，并写入路由状态。
+
+默认确定性规则：
+
+`http_dimension_applicable = requires_executable AND (intent_type in {codegen, ops, diagnosis}) AND has_http_scope_signal`
+
+当满足任一条件时，`has_http_scope_signal=true`：
+
+1. 请求要求生成或修改外部 API 调用逻辑。
+2. 请求要求栈相关 HTTP 行为（`headers`、`status`、`retry`、`timeout`、`proxy`、`auth signing`、`TLS`）。
+3. 部署上下文包含 API gateway/webhook/service integration 约束。
+
+若均不满足，应设 `http_client=not_applicable`，并从分母剔除该权重。
+
+### 触发示例
+
+- `intent_type=codegen`、`requires_executable=true`、任务为“实现 webhook 重试客户端” -> 触发。
+- `intent_type=architecture`、`requires_executable=false`、任务为“比较 pub/sub 模式” -> 不触发。
 
 ## 维度判定标准（公开默认）
 

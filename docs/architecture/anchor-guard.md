@@ -33,10 +33,27 @@ Prevent unsafe or misleading executable guidance when environmental anchors are 
 
 Where `active_weights` include only dimensions not marked `not_applicable`.
 
-### HTTP Conditional Rule
+## HTTP Applicability Rule (Operational)
 
-`http_client` is included in scoring only when request scope requires stack-specific HTTP details.
-If stack-specific HTTP details are not required, set `http_client=not_applicable`.
+`http_client` is included only when `http_dimension_applicable=true`.
+This flag MUST be computed during understanding stage and persisted in route-state.
+
+Default deterministic rule:
+
+`http_dimension_applicable = requires_executable AND (intent_type in {codegen, ops, diagnosis}) AND has_http_scope_signal`
+
+`has_http_scope_signal=true` when any condition holds:
+
+1. request asks to generate or modify external API call logic.
+2. request asks for stack-specific HTTP behavior (`headers`, `status`, `retry`, `timeout`, `proxy`, `auth signing`, `TLS`).
+3. deployment context includes API gateway/webhook/service-integration constraints.
+
+If none hold, set `http_client=not_applicable` and exclude its weight from denominator.
+
+### Applicability Examples
+
+- `intent_type=codegen`, `requires_executable=true`, task is "implement webhook retry client" -> applicable.
+- `intent_type=architecture`, `requires_executable=false`, task is "compare pub/sub patterns" -> not applicable.
 
 ## Dimension Rubric (Public Default)
 

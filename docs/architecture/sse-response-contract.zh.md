@@ -55,7 +55,8 @@
 `payload` 选填：
 
 - `channel`：`text | artifact`
-- `artifact_id`：当 `channel=artifact` 时的产物 ID
+- `artifact_id`：当 `channel=artifact` 时的产物 ID（该场景必填）
+- `chunk_index`：artifact 分片序号
 
 `content` 必须为非终止事件（`terminal=false`）。
 
@@ -92,7 +93,26 @@
 
 `error` 必须为终止事件（`terminal=true`）。
 
-## 4. 顺序与超时语义
+## 4. Artifact 通道语义
+
+当 `content.payload.channel=artifact` 时：
+
+1. `artifact_id` 必填。
+2. 消费端应按 `artifact_id` 缓存分片。
+3. 若存在 `chunk_index`，需在同一 `artifact_id` 下单调递增。
+
+当 `final.payload.artifacts` 存在时：
+
+1. 每个条目必须包含 `artifact_id`。
+2. 所有流式出现过的 `artifact_id` 必须在 `final.payload.artifacts` 中且仅出现一次。
+3. 每个条目应给出终态 `status`（`complete | partial | blocked`）。
+
+消费端集成规则：
+
+- `content` 用于增量接收 artifact 内容。
+- `final.payload.artifacts` 是权威元数据与完成信号。
+
+## 5. 顺序与超时语义
 
 允许顺序：
 
@@ -105,7 +125,7 @@
 3. 阶段超时时，若可发送，应先发 `status(code=timeout_warning)`。
 4. 终止超时必须发 `error(error_code=E_TIMEOUT_STAGE_*)`。
 
-## 5. 校验与拒收规则
+## 6. 校验与拒收规则
 
 出现以下任一情况，消费端应拒收或隔离该流：
 
@@ -114,16 +134,19 @@
 3. 出现多个终止事件。
 4. `payload` 与 `event_type` 不匹配。
 5. 终止事件后仍有新事件。
+6. `content.channel=artifact` 但缺少 `artifact_id`。
+7. 流式 `artifact_id` 未在 `final.payload.artifacts` 回收。
 
-## 6. 版本与兼容
+## 7. 版本与兼容
 
 - 版本：`v1`
 - JSON Schema：[`examples/contracts/sse-event.schema.v1.json`](../../examples/contracts/sse-event.schema.v1.json)
 - 向后兼容规则：小版本仅允许新增可选字段。
 
-## 7. 验收场景
+## 8. 验收场景
 
 1. 正常流：`status -> content -> content -> final`。
 2. 超时流：`status(timeout_warning) -> error(E_TIMEOUT_STAGE_AUDIT)`。
 3. 早期 schema 失败：`status -> error(E_SCHEMA_INVALID_PAYLOAD)`。
-4. 负例：重复终止事件。
+4. artifact 流：`content(channel=artifact,artifact_id=A1)* -> final(artifacts 含 A1)`。
+5. 负例：重复终止事件。

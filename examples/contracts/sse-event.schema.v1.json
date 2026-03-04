@@ -86,8 +86,20 @@
             "properties": {
               "delta": { "type": "string" },
               "channel": { "type": "string", "enum": ["text", "artifact"] },
-              "artifact_id": { "type": "string" }
+              "artifact_id": { "type": "string", "minLength": 1 },
+              "chunk_index": { "type": "integer", "minimum": 0 }
             },
+            "allOf": [
+              {
+                "if": {
+                  "properties": { "channel": { "const": "artifact" } },
+                  "required": ["channel"]
+                },
+                "then": {
+                  "required": ["artifact_id"]
+                }
+              }
+            ],
             "additionalProperties": true
           }
         }
@@ -108,7 +120,20 @@
               "answer": { "type": "string" },
               "artifacts": {
                 "type": "array",
-                "items": { "type": "object" }
+                "items": {
+                  "type": "object",
+                  "required": ["artifact_id"],
+                  "properties": {
+                    "artifact_id": { "type": "string", "minLength": 1 },
+                    "status": {
+                      "type": "string",
+                      "enum": ["complete", "partial", "blocked"]
+                    },
+                    "mime_type": { "type": "string" },
+                    "digest": { "type": "string" }
+                  },
+                  "additionalProperties": true
+                }
               },
               "quality_gate_result": {
                 "type": "string",

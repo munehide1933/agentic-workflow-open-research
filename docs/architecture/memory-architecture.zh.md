@@ -34,20 +34,49 @@
 2. 输出为 `hard_fail` 时不写入。
 3. 策略标记为敏感内容时不写入。
 
-## 4. 跨会话检索
+## 4. 检索触发与管线接入点
+
+检索在 `S1_UNDERSTANDING_READY` 之后、`S2_DIAGNOSIS_READY` 之前执行。
+
+管线契约：
+
+1. 仅当检索开关开启且请求非“记忆隔离”意图时执行 `retrieve_cross_session_memory()`。
+2. 命中结果按 `min_score` 过滤后写入 `state.memory_context[]`。
+3. `build_diagnosis_structure()` 接收 `memory_context` 作为外部上下文输入。
+
+`memory_context` 的公开最小字段：
+
+- `memory_id`
+- `score`
+- `snippet`
+- `source_session_id`
+
+## 5. 跨会话检索语义
 
 默认检索参数：
 
 - `top_k = 8`
 - 相关性阈值 `min_score = 0.72`
 
-检索行为：
+行为规则：
 
 1. 低于阈值的候选直接丢弃。
-2. 检索结果作为外部上下文，不可直接当作事实。
-3. 低置信检索应提升 `required_fields`。
+2. 检索记忆是上下文，不是独立事实。
+3. diagnosis 可用检索记忆生成假设或验证步骤。
+4. 仅由记忆支撑的结论不得直接进入 `facts`，除非有本轮证据佐证。
+5. 低置信检索应提升 `required_fields`。
 
-## 5. 回滚语义
+## 6. 与 Verification-First 的绑定
+
+当 `diagnosis.insufficient_evidence=true` 时，草稿必须遵循 verification-first 约束：
+
+1. 必须包含显式不确定性声明。
+2. 必须限制结论边界，不得提升根因确定性。
+3. 必须包含按可观测信号排序的验证清单。
+4. 必须包含 `required_fields` 缺失观察项。
+5. 必须阻断不可逆可执行动作。
+
+## 7. 回滚语义
 
 回滚粒度：run 级。
 
@@ -63,9 +92,12 @@
 2. 保留不可变回滚追踪记录。
 3. 不重写历史已完成 run 负载。
 
-## 6. 验收场景
+## 8. 验收场景
 
 1. TTL 到期后 run 数据按规则驱逐。
 2. finalize 成功后写入长期记忆。
 3. hard fail 不写入长期记忆。
-4. 触发回滚后恢复到最近提交状态。
+4. 检索命中在 diagnosis 前注入。
+5. 仅记忆支撑的结论不会直接进入 facts。
+6. 证据不足路径输出满足 verification-first 约束。
+7. 触发回滚后恢复到最近提交状态。

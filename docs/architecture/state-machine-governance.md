@@ -21,11 +21,17 @@ A reliable agent must be governed by explicit states, transitions, concurrency s
 
 - `S1 -> S2`: diagnosis required and minimum observability exists.
 - `S2 -> S3`: diagnosis schema is parseable.
-- `S3 -> S4`: audit eligible request.
+- `S3 -> S4`: `second_pass_eligible=true`.
 - `S4 -> S5`: audit valid or partial salvage allowed by policy.
 - `S6 -> S0`: same-session re-entry on new user input.
 - Any non-terminal state -> `S_FAIL_RETRYABLE`: timeout or transient upstream failure.
 - Any non-terminal state -> `S_FAIL_TERMINAL`: schema violation, policy hard block, unrecoverable failure.
+
+`second_pass_eligible` is deterministic and defined in transition matrix rules:
+
+- `risk_level=high`, or
+- `intent_type in {diagnosis, codegen, ops}`, or
+- `requires_executable=true`
 
 ## Concurrency Rule
 

@@ -1,5 +1,8 @@
 # Agentic Workflow Pseudocode (Public)
 
+Assumption: second-pass payload follows audit schema v2 (`audit_completeness`).
+If a v1 payload is received, completeness inference follows merge-policy rules.
+
 ```python
 def run_agent(query: str, context: dict) -> dict:
     if is_session_inflight(context["session_id"]):
@@ -14,14 +17,32 @@ def run_agent(query: str, context: dict) -> dict:
     understanding = understand(state)  # S1
     state["understanding"] = understanding
 
+    memory_hits = retrieve_cross_session_memory(state)
+    state["memory_context"] = filter_memory_hits(memory_hits, min_score=0.72)
+
     if not understanding.requires_diagnosis:
         draft = generate_direct_answer(state)  # S3
     else:
-        diagnosis = build_diagnosis_structure(state)  # S2
+        diagnosis = build_diagnosis_structure(
+            state,
+            external_context=state.get("memory_context", []),
+        )  # S2
         state["diagnosis"] = diagnosis
 
         if diagnosis.insufficient_evidence:
-            draft = build_verification_first_draft(state)
+            draft = build_verification_first_draft(
+                state,
+                must_include=[
+                    "uncertainty_statement",
+                    "bounded_claims",
+                    "verification_checklist",
+                    "required_fields",
+                ],
+                must_exclude=[
+                    "irreversible_actions",
+                    "unsupported_root_cause_certainty",
+                ],
+            )
         else:
             draft = synthesize_draft(state)  # S3
 
@@ -49,4 +70,5 @@ def run_agent(query: str, context: dict) -> dict:
 
 - Modes are `basic`, `deep_thinking`, and `web_search`.
 - Fail states are split into `S_FAIL_RETRYABLE` and `S_FAIL_TERMINAL`.
+- `should_run_second_pass()` uses `second_pass_eligible` guard from state-machine matrix.
 - Public pseudocode omits private policy constants and local execution internals.
