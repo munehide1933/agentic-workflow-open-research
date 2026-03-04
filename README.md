@@ -62,7 +62,30 @@ See [Diagnosis Flow Diagram](./docs/diagrams/diagnosis-structure-flow.mmd).
 - English: [Beyond Prompt Engineering](./docs/papers/beyond-prompt-engineering.en.md)
 - Japanese: [Beyond Prompt Engineering（日本語版）](./docs/papers/beyond-prompt-engineering.ja.md)
 
+## What Is Implemented Today (No Overclaim)
+
+1. Multi-mode conversation: `basic / deep_thinking / web_search`
+2. SSE response contract with explicit `status/content/final/error` events
+3. Structured diagnosis: `facts`, `hypotheses`, `excluded_hypotheses`, `insufficient_evidence`
+4. Second-pass audit with timeout-aware safe degradation
+5. Anchor Guard for under-anchored code requests
+6. Code artifact quality gate (syntax checks + risky pattern scan + graded fallback)
+7. Session and memory stack: SQLite short-term + optional Qdrant long-term
+8. Reliability baseline: WAL, retries, logging, rate limiting, optional backup scheduler
+
+## Customer Problems This Can Solve
+
+- hard-to-audit troubleshooting conversations
+- overconfident answers under weak evidence
+- code guidance without runtime anchors
+- unstable output shape for frontend/system integration
+- high postmortem cost due to non-reproducible chat behavior
+
+## Framework and Thinking Notes
+
+- [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
+- [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
+
 ## License
 
 This open research edition is released under Apache-2.0.
-

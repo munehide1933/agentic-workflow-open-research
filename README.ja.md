@@ -29,3 +29,25 @@
 
 詳細は [Open-Source Boundary](./docs/architecture/open-source-boundary.md) を参照してください。
 
+## 実装済み機能（誇張なし）
+
+1. 対話モード: `basic / deep_thinking / web_search`
+2. SSE 契約: `status/content/final/error` の明示分離
+3. 診断構造化: `facts / hypotheses / excluded_hypotheses / insufficient_evidence`
+4. 二段階監査: ドラフト再評価と安全劣化
+5. Anchor Guard: アンカー不足時の高リスクコード抑制
+6. 品質ゲート: 構文・危険パターン検査と段階的フォールバック
+7. セッション/記憶: SQLite + （任意）Qdrant
+8. 運用基盤: WAL、リトライ、ログ、レート制限、任意バックアップ
+
+## 顧客課題への対応
+
+- 監査しにくい障害解析回答
+- 根拠不足でも断定する応答
+- 前提不足のコード提案
+- 不安定なストリーム出力による統合難
+
+## 追加ドキュメント
+
+- [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
+- [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
