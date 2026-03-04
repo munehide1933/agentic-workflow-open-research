@@ -15,14 +15,27 @@
 - v1：[`examples/contracts/second-pass-audit.schema.json`](../../examples/contracts/second-pass-audit.schema.json)
 - v2：[`examples/contracts/second-pass-audit.schema.v2.json`](../../examples/contracts/second-pass-audit.schema.v2.json)
 
-兼容规则：
+### 3.1 v1 历史约束
 
-1. v1 不含 `audit_completeness` 时按规则推断。
-2. 必填键可解析且挑战字段有效，推断为 `full`。
-3. 可解析但挑战强度不足，推断为 `partial`。
-4. schema 校验失败，推断为 `invalid`。
+v1 schema 中 `counter_hypotheses.minItems = 1` 是历史兼容约束。
+因此 v1 不能表达“`counter_hypotheses` 为空”的 partial audit。
 
-## 4. `is_valid_audit()` 判定
+### 3.2 生产/消费兼容规则（生效日期：March 4, 2026）
+
+1. producer 默认应输出 v2。
+2. v1 仅保留读取兼容。
+3. 若 partial audit 需要空的 `counter_hypotheses`，必须使用 v2。
+4. v1 中空 `counter_hypotheses` 会 schema 失败并判为 `invalid`。
+
+## 4. 完整度推断
+
+当 v1 不含 `audit_completeness` 时，按内容质量推断：
+
+1. `full`：schema 合法且挑战信号充分。
+2. `partial`：schema 合法但挑战强度偏弱。
+3. `invalid`：schema 校验失败。
+
+## 5. `is_valid_audit()` 判定
 
 `is_valid_audit()` 仅在以下三类检查都通过时返回 true：
 
@@ -30,7 +43,7 @@
 2. non-echo（非回声）检查。
 3. challenge quality（挑战质量）检查。
 
-### 4.1 non-echo 检查
+### 5.1 non-echo 检查
 
 公开默认阈值（可在私有部署替换）：
 
@@ -39,7 +52,7 @@
 
 若两项阈值均未通过，则判定为 echo，拒绝合并。
 
-### 4.2 挑战质量检查
+### 5.2 挑战质量检查
 
 满足以下任一条件可视为挑战质量达标：
 
@@ -48,15 +61,15 @@
 3. `structure_inconsistencies` 指出诊断与草稿不一致。
 4. `counter_hypotheses` 提供非重复替代假设。
 
-## 5. 合并动作
+## 6. 合并动作
 
-### 5.1 `audit_completeness=full`
+### 6.1 `audit_completeness=full`
 
 - 应用审计挑战后的修订。
 - 保持 diagnosis 不变量。
 - 在证据支持下允许修正结论。
 
-### 5.2 `audit_completeness=partial`
+### 6.2 `audit_completeness=partial`
 
 允许 partial salvage 的字段：
 
@@ -69,12 +82,12 @@ partial salvage 明确禁止：
 - 提升主根因确定性
 - 无新增证据时提高置信等级
 
-### 5.3 `audit_completeness=invalid`
+### 6.3 `audit_completeness=invalid`
 
 - 拒绝合并。
 - 进入安全降级路径（`invalid_or_partial_audit`）。
 
-## 6. 安全降级行为
+## 7. 安全降级行为
 
 当合并被拒绝时：
 
@@ -82,7 +95,7 @@ partial salvage 明确禁止：
 2. 补充不确定性声明与验证步骤。
 3. 不引入新的高风险可执行指令。
 
-## 7. 参考伪代码
+## 8. 参考伪代码
 
 ```python
 def resolve_second_pass(draft, diagnosis, audit):
@@ -102,9 +115,11 @@ def resolve_second_pass(draft, diagnosis, audit):
     return safe_degrade(draft, "invalid_or_partial_audit")
 ```
 
-## 8. 验收场景
+## 9. 验收场景
 
 1. full + non-echo + 高质量挑战 => 合并。
 2. full + echo => 拒绝。
 3. partial + non-echo => 仅 partial salvage。
 4. schema 无效 => 安全降级。
+5. v1 且 `counter_hypotheses` 为空 => `invalid`。
+6. 无 counter_hypothesis 的 partial audit => 必须使用 v2。

@@ -11,14 +11,88 @@ Prevent unsafe or misleading executable guidance when environmental anchors are 
 - client SDK
 - HTTP client (when stack-specific details are required)
 
-## Anchor Completeness Scoring
+## Scoring Model (Weighted + Conditional Normalization)
 
-Each anchor dimension contributes to a normalized score in `[0, 1]`.
-Public default thresholds (replaceable in private deployments):
+### Weights
+
+- `runtime = 0.35`
+- `deployment_context = 0.30`
+- `client_sdk = 0.25`
+- `http_client = 0.10`
+
+### Dimension Status Values
+
+- `present = 1.0`
+- `partial = 0.5`
+- `missing = 0.0`
+- `not_applicable = exclude` (removed from denominator)
+
+### Score Formula
+
+`anchor_score = sum(weight_i * value_i) / sum(active_weights)`
+
+Where `active_weights` include only dimensions not marked `not_applicable`.
+
+### HTTP Conditional Rule
+
+`http_client` is included in scoring only when request scope requires stack-specific HTTP details.
+If stack-specific HTTP details are not required, set `http_client=not_applicable`.
+
+## Dimension Rubric (Public Default)
+
+### Runtime
+
+- `present`: explicit runtime family and version scope are known.
+- `partial`: runtime family known but version/scope unclear.
+- `missing`: runtime family unknown.
+
+### Deployment Context
+
+- `present`: deployment target/stage constraints are explicit.
+- `partial`: generic environment hint exists, but target constraints are incomplete.
+- `missing`: no deployment context.
+
+### Client SDK
+
+- `present`: SDK family and usable package identity/version scope are explicit.
+- `partial`: SDK family known but package/version scope unclear.
+- `missing`: SDK not identified.
+
+### HTTP Client
+
+- `present`: stack-specific HTTP client is explicit when required.
+- `partial`: HTTP usage implied but concrete client not fixed.
+- `missing`: required HTTP client unknown.
+- `not_applicable`: request does not require stack-specific HTTP details.
+
+## Threshold Policy (Unchanged)
 
 - `score < 0.50`: block executable code
 - `0.50 <= score < 0.80`: allow pseudocode only
 - `score >= 0.80`: executable output eligible (must still pass Quality Gate)
+
+## Deterministic Examples
+
+### Example A: High confidence, HTTP not applicable
+
+- runtime=`present`, deployment=`present`, sdk=`present`, http=`not_applicable`
+- numerator = `0.35*1.0 + 0.30*1.0 + 0.25*1.0 = 0.90`
+- denominator = `0.35 + 0.30 + 0.25 = 0.90`
+- `anchor_score = 1.00` -> executable eligible
+
+### Example B: Borderline
+
+- runtime=`present`, deployment=`partial`, sdk=`missing`, http=`missing` (required)
+- numerator = `0.35*1.0 + 0.30*0.5 + 0.25*0.0 + 0.10*0.0 = 0.50`
+- denominator = `1.00`
+- `anchor_score = 0.50` -> pseudocode only
+
+### Example C: Low confidence
+
+- runtime=`missing`, deployment=`partial`, sdk=`missing`, http=`missing` (required)
+- numerator = `0.35*0.0 + 0.30*0.5 + 0.25*0.0 + 0.10*0.0 = 0.15`
+- denominator = `1.00`
+- `anchor_score = 0.15` -> block executable code
 
 ## Policy
 

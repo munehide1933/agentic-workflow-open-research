@@ -40,30 +40,58 @@
 
 `correct_fallback_runs / runs_that_should_degrade`
 
+其中 `runs_that_should_degrade = 计数(满足 degrade_oracle.should_degrade=true 的 run)`。
+
 5. Final Consistency
 
 `runs_with_contract_consistent_final / total_runs`
 
-## 5. 评测流程
+## 5. Degrade Oracle（可机械执行）
+
+定义：
+
+`should_degrade = (diagnosis.insufficient_evidence) OR (requires_executable AND anchor_score < 0.80) OR (audit_invalid_or_echo_or_weak) OR (quality_gate in {soft_fail, hard_fail}) OR (state in {S_FAIL_RETRYABLE, S_FAIL_TERMINAL})`
+
+`oracle_reason` 为多标签集合，取值：
+
+- `insufficient_evidence`
+- `missing_anchor`
+- `invalid_audit`
+- `weak_audit`
+- `quality_gate_fail`
+- `fail_state`
+
+每个 run 的 oracle 输出字段：
+
+- `oracle_should_degrade`：布尔值
+- `oracle_reason`：标签数组
+
+## 6. 评测流程
 
 1. 固化数据集切分与输入提示。
 2. 三组基线使用同一请求集合运行。
 3. 持久化原始事件、diagnosis 结构、audit 载荷、final 输出。
-4. 仅基于持久化产物计算指标。
+4. 仅基于持久化产物计算指标与 oracle 标签。
 5. 样本量允许时报告置信区间。
 
-## 6. 报告模板
+## 7. 数据集规范
+
+最小列定义与样例见 [`examples/contracts/benchmark-dataset-spec.md`](../../examples/contracts/benchmark-dataset-spec.md)。
+
+## 8. 报告模板
 
 最低报告内容：
 
 - 数据集定义与采样方法
 - 基线配置说明
 - 带公式的指标表
+- degrade oracle 规则与原因分布
 - 失败模式样例
 - 复现检查清单
 
-## 7. 验收标准
+## 9. 验收标准
 
 1. 指标公式可机器校验。
-2. 数据集与切分具备版本管理。
-3. 其他团队复跑可得到一致指标逻辑与可比趋势。
+2. `runs_that_should_degrade` 由确定性 oracle 逻辑计算。
+3. 数据集与切分具备版本管理。
+4. 其他团队复跑可得到一致指标逻辑与可比趋势。

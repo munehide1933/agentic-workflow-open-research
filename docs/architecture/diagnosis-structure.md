@@ -14,6 +14,7 @@ Convert free-text problem statements into a diagnosis artifact that is testable 
 
 `required_fields` is an output field in the diagnosis artifact.
 It is not an input validation schema for user requests.
+`required_fields` can be empty when evidence is already sufficient.
 
 ## Invariants
 

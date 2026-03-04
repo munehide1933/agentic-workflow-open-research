@@ -40,30 +40,58 @@
 
 `correct_fallback_runs / runs_that_should_degrade`
 
+ここで `runs_that_should_degrade = count(degrade_oracle.should_degrade=true の run)`。
+
 5. Final Consistency
 
 `runs_with_contract_consistent_final / total_runs`
 
-## 5. 計測プロトコル
+## 5. Degrade Oracle（機械実行可能）
+
+定義：
+
+`should_degrade = (diagnosis.insufficient_evidence) OR (requires_executable AND anchor_score < 0.80) OR (audit_invalid_or_echo_or_weak) OR (quality_gate in {soft_fail, hard_fail}) OR (state in {S_FAIL_RETRYABLE, S_FAIL_TERMINAL})`
+
+`oracle_reason` は複数ラベル集合で、値は次の通り：
+
+- `insufficient_evidence`
+- `missing_anchor`
+- `invalid_audit`
+- `weak_audit`
+- `quality_gate_fail`
+- `fail_state`
+
+run ごとの oracle 出力：
+
+- `oracle_should_degrade`: boolean
+- `oracle_reason`: ラベル配列
+
+## 6. 計測プロトコル
 
 1. データ分割と入力プロンプトを固定。
 2. すべてのベースラインを同一要求集合で実行。
 3. 生イベント、diagnosis、audit、final 出力を永続化。
-4. 永続化成果物のみから指標算出。
+4. 永続化成果物のみから指標と oracle ラベルを算出。
 5. サンプル数が十分なら信頼区間を報告。
 
-## 6. レポートテンプレート
+## 7. データセット仕様
+
+最小列定義とサンプルは [`examples/contracts/benchmark-dataset-spec.md`](../../examples/contracts/benchmark-dataset-spec.md) を参照。
+
+## 8. レポートテンプレート
 
 最低限含める内容：
 
 - データセット定義とサンプリング方法
 - ベースライン設定
 - 公式付き指標テーブル
+- degrade oracle 基準と理由分布
 - 失敗モード例
 - 再現性チェックリスト
 
-## 7. 受け入れ基準
+## 9. 受け入れ基準
 
 1. 指標式が機械的に検証できる。
-2. データセットと分割がバージョン管理されている。
-3. 他チーム再実行で同一ロジックと比較可能な傾向が得られる。
+2. `runs_that_should_degrade` は決定論的 oracle で導出される。
+3. データセットと分割がバージョン管理されている。
+4. 他チーム再実行で同一ロジックと比較可能な傾向が得られる。

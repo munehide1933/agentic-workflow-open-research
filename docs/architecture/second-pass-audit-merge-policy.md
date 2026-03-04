@@ -15,14 +15,27 @@ This document defines the normative merge policy between draft output and second
 - v1: [`examples/contracts/second-pass-audit.schema.json`](../../examples/contracts/second-pass-audit.schema.json)
 - v2: [`examples/contracts/second-pass-audit.schema.v2.json`](../../examples/contracts/second-pass-audit.schema.v2.json)
 
-Compatibility rule:
+### 3.1 Historical Constraint in v1
 
-1. If `audit_completeness` is absent (v1), infer as:
-2. `full` when all required keys parse and at least one challenge field is populated.
-3. `partial` when parseable but challenge content is weak.
-4. `invalid` when schema validation fails.
+In v1 schema, `counter_hypotheses.minItems = 1` is a historical compatibility constraint.
+This makes v1 unable to represent a partial audit with an empty `counter_hypotheses` list.
 
-## 4. `is_valid_audit()` Decision
+### 3.2 Producer/Consumer Compatibility (Effective March 4, 2026)
+
+1. Producers SHOULD emit v2 by default.
+2. v1 remains read-compatible for existing producers.
+3. If partial audit needs empty `counter_hypotheses`, payload MUST use v2.
+4. v1 payload with empty `counter_hypotheses` fails schema and is treated as `invalid`.
+
+## 4. Completeness Inference
+
+If `audit_completeness` is absent (v1), infer from content quality:
+
+1. `full`: schema-valid audit with substantive challenge signals.
+2. `partial`: schema-valid audit with weak but usable challenge signals.
+3. `invalid`: schema validation failure.
+
+## 5. `is_valid_audit()` Decision
 
 `is_valid_audit()` returns true only if all checks pass:
 
@@ -30,7 +43,7 @@ Compatibility rule:
 2. Non-echo check.
 3. Challenge quality check.
 
-### 4.1 Non-echo Check
+### 5.1 Non-echo Check
 
 Default open thresholds (replaceable in private deployments):
 
@@ -39,7 +52,7 @@ Default open thresholds (replaceable in private deployments):
 
 If both thresholds fail, audit is treated as echo and merge is rejected.
 
-### 4.2 Challenge Quality Check
+### 5.2 Challenge Quality Check
 
 Audit challenge quality is valid when one or more of the following is true:
 
@@ -48,15 +61,15 @@ Audit challenge quality is valid when one or more of the following is true:
 3. `structure_inconsistencies` points to diagnosis-draft mismatch.
 4. `counter_hypotheses` adds non-duplicate alternatives.
 
-## 5. Merge Actions
+## 6. Merge Actions
 
-### 5.1 `audit_completeness=full`
+### 6.1 `audit_completeness=full`
 
 - Apply challenge-guided edits.
 - Keep diagnosis invariants unchanged.
 - Allow conclusion revision when evidence supports it.
 
-### 5.2 `audit_completeness=partial`
+### 6.2 `audit_completeness=partial`
 
 Partial salvage is allowed for:
 
@@ -69,12 +82,12 @@ Partial salvage is NOT allowed to:
 - promote certainty of primary root cause
 - upgrade confidence rank without new evidence
 
-### 5.3 `audit_completeness=invalid`
+### 6.3 `audit_completeness=invalid`
 
 - Reject audit merge.
 - Trigger safe degrade path (`invalid_or_partial_audit`).
 
-## 6. Safe Degrade Behavior
+## 7. Safe Degrade Behavior
 
 When merge is rejected:
 
@@ -82,7 +95,7 @@ When merge is rejected:
 2. append uncertainty and verification steps
 3. avoid introducing new executable high-risk instructions
 
-## 7. Reference Pseudocode
+## 8. Reference Pseudocode
 
 ```python
 def resolve_second_pass(draft, diagnosis, audit):
@@ -102,9 +115,11 @@ def resolve_second_pass(draft, diagnosis, audit):
     return safe_degrade(draft, "invalid_or_partial_audit")
 ```
 
-## 8. Acceptance Scenarios
+## 9. Acceptance Scenarios
 
 1. Full + non-echo + high quality => merge accepted.
 2. Full + echo => rejected.
 3. Partial + non-echo => partial salvage only.
 4. Invalid schema => safe degrade.
+5. v1 with empty `counter_hypotheses` => invalid.
+6. Partial audit without counter hypothesis => must use v2.
