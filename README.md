@@ -84,6 +84,9 @@ See [Open-Source Boundary](./docs/architecture/open-source-boundary.md).
 - [Benchmark Methodology (EN)](./docs/architecture/benchmark-methodology.md)
 - [可靠性 Benchmark 方法论（中文）](./docs/architecture/benchmark-methodology.zh.md)
 - [信頼性 Benchmark 方法論（日本語）](./docs/architecture/benchmark-methodology.ja.md)
+- [Agentic Workflow Architecture (EN)](./docs/architecture/agentic-workflow.md)
+- [State-Machine Governance (EN)](./docs/architecture/state-machine-governance.md)
+- [Diagnosis Structure (EN)](./docs/architecture/diagnosis-structure.md)
 
 ## Framework Notes
 

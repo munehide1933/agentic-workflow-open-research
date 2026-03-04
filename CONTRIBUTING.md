@@ -23,4 +23,3 @@ This repository accepts contributions to:
 3. Contracts and diagrams remain internally consistent.
 4. Changes include rationale and expected reliability impact.
 5. Avoid meta-credibility or self-justifying wording in headings/body.
-6. Run `./scripts/check-banned-phrases.sh` before opening a PR.

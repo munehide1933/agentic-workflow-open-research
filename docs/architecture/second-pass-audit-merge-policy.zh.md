@@ -24,8 +24,9 @@ v1 schema 中 `counter_hypotheses.minItems = 1` 是历史兼容约束。
 
 1. producer 默认应输出 v2。
 2. v1 仅保留读取兼容。
-3. 若 partial audit 需要空的 `counter_hypotheses`，必须使用 v2。
-4. v1 中空 `counter_hypotheses` 会 schema 失败并判为 `invalid`。
+3. 该生效日期是本开源研究发布线的最终日期。
+4. 若 partial audit 需要空的 `counter_hypotheses`，必须使用 v2。
+5. v1 中空 `counter_hypotheses` 会 schema 失败并判为 `invalid`。
 
 ## 4. 完整度推断
 

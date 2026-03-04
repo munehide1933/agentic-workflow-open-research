@@ -24,8 +24,9 @@ This makes v1 unable to represent a partial audit with an empty `counter_hypothe
 
 1. Producers SHOULD emit v2 by default.
 2. v1 remains read-compatible for existing producers.
-3. If partial audit needs empty `counter_hypotheses`, payload MUST use v2.
-4. v1 payload with empty `counter_hypotheses` fails schema and is treated as `invalid`.
+3. This effective date is final for the open-research release line.
+4. If partial audit needs empty `counter_hypotheses`, payload MUST use v2.
+5. v1 payload with empty `counter_hypotheses` fails schema and is treated as `invalid`.
 
 ## 4. Completeness Inference
 

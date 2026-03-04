@@ -19,9 +19,10 @@ Schema files are versioned when behavior-affecting changes are introduced.
 
 1. v1 keeps read compatibility for existing producers.
 2. Effective **March 4, 2026**, producers SHOULD emit v2 by default.
-3. v1 has a historical constraint: `counter_hypotheses.minItems=1`.
-4. Partial audit that needs empty `counter_hypotheses` MUST use v2.
-5. v1 payload with empty `counter_hypotheses` is schema-invalid and treated as `invalid`.
+3. The effective date above is final for this open-research release line.
+4. v1 has a historical constraint: `counter_hypotheses.minItems=1`.
+5. Partial audit that needs empty `counter_hypotheses` MUST use v2.
+6. v1 payload with empty `counter_hypotheses` is schema-invalid and treated as `invalid`.
 
 ## Validation Guidance
 

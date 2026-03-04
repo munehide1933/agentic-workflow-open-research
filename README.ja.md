@@ -77,8 +77,24 @@
 - [信頼性 Benchmark 方法論（日本語）](./docs/architecture/benchmark-methodology.ja.md)
 - [Benchmark Methodology (EN)](./docs/architecture/benchmark-methodology.md)
 - [可靠性 Benchmark 方法论（中文）](./docs/architecture/benchmark-methodology.zh.md)
+- [Agentic Workflow Architecture (EN)](./docs/architecture/agentic-workflow.md)
+- [State-Machine Governance (EN)](./docs/architecture/state-machine-governance.md)
+- [Diagnosis Structure (EN)](./docs/architecture/diagnosis-structure.md)
 
 ## 補足
 
 - [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
 - [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
+
+## Papers
+
+- [Beyond Prompt Engineering (EN)](./docs/papers/beyond-prompt-engineering.en.md)
+- [Beyond Prompt Engineering（日本語版）](./docs/papers/beyond-prompt-engineering.ja.md)
+- [Diagnosis Structure (EN)](./docs/papers/diagnosis-structure.evidence-first.en.md)
+- [Diagnosis Structure（日本語版）](./docs/papers/diagnosis-structure.evidence-first.ja.md)
+- [Anchor Guard (EN)](./docs/papers/anchor-guard.reliable-codegen.en.md)
+- [Anchor Guard（日本語版）](./docs/papers/anchor-guard.reliable-codegen.ja.md)
+
+## License
+
+この公開研究版は Apache-2.0 ライセンスで提供されます。
