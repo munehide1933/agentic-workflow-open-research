@@ -66,7 +66,21 @@ Behavior rules:
 4. a memory-only claim cannot be promoted to `facts` without current-run evidence.
 5. low-confidence retrieval should increase `required_fields`.
 
-## 6. Verification-First Binding
+## 6. `min_score` Calibration Guidance
+
+Public default `min_score=0.72` is calibrated for cosine similarity under the default embedding/index setup.
+
+Calibration procedure for alternative embedding model, distance metric, or index config:
+
+1. prepare labeled retrieval validation set (minimum 200 query-memory pairs).
+2. sweep thresholds in `[0.50, 0.90]` with step `0.02`.
+3. compute weighted objective `J = 0.7*precision + 0.3*recall` on relevant-memory retrieval.
+4. choose threshold that maximizes `J` while keeping false-positive memory injection acceptable.
+5. publish calibrated threshold and dataset summary in benchmark metadata.
+
+Without this recalibration, `min_score` comparability across implementations is not guaranteed.
+
+## 7. Verification-First Binding
 
 If `diagnosis.insufficient_evidence=true`, draft generation MUST follow verification-first constraints:
 
@@ -76,7 +90,7 @@ If `diagnosis.insufficient_evidence=true`, draft generation MUST follow verifica
 4. include missing observations from `required_fields`.
 5. block irreversible executable actions.
 
-## 7. Rollback Semantics
+## 8. Rollback Semantics
 
 Rollback granularity: run-level.
 
@@ -92,7 +106,7 @@ Rollback behavior:
 2. keep immutable trace record of rollback reason
 3. never rewrite historical completed run payloads
 
-## 8. Acceptance Scenarios
+## 9. Acceptance Scenarios
 
 1. TTL expiration evicts run data predictably.
 2. finalize success writes to long-term memory.
@@ -100,4 +114,5 @@ Rollback behavior:
 4. retrieval hits are injected before diagnosis.
 5. memory-only claims do not enter facts without corroboration.
 6. insufficient evidence path emits verification-first constrained draft.
-7. rollback trigger restores previous committed run state.
+7. threshold recalibration produces declared replacement for `0.72` when backend changes.
+8. rollback trigger restores previous committed run state.

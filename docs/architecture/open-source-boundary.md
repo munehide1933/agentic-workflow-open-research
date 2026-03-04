@@ -7,19 +7,23 @@ This document defines what is public, partially public, and private in the open 
 - Architecture docs and state-machine flow
 - Evidence-First Diagnosis data model and schema contracts
 - Second-Pass Audit contract and merge strategy description
-- Anchor Guard decision policy at abstract level
+- Anchor Guard scoring defaults and public guard interface contract
+- Routing mode thresholds and public default feature-derivation formulas
+- Quality Gate decision framework and public risk-category taxonomy
+- Memory interface contracts and public default retrieval threshold with recalibration method
 - Pseudocode and non-executable examples
 
 ## Partially Public (Redacted)
 
-- Quality gate design goals (without full rule sets)
-- Routing principles (without proprietary thresholds)
-- Memory interface contracts (without private indexing strategies)
+- Full risky-pattern rule bodies (pattern implementation details)
+- Proprietary anti-abuse heuristics and policy tuning weights
+- Private calibration datasets and internal labeling guidelines
+- Memory indexing internals and deployment-specific performance knobs
 
 ## Private (Not Published)
 
 - Local execution layer (shell/filesystem/system calls)
-- Production policy constants and anti-abuse heuristics
+- Production policy constants and anti-abuse heuristics not in public defaults
 - Prompt internals with sensitive behavior tuning
 - Private deployment topology and infrastructure details
 - Secrets, keys, private endpoints, real tenant metadata
@@ -31,4 +35,3 @@ This document defines what is public, partially public, and private in the open 
 3. No logs containing request payloads with private user data.
 4. No executable operators for local host control.
 5. No private policy rulebooks used for production defense.
-

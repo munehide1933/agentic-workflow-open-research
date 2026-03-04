@@ -17,6 +17,11 @@ def run_agent(query: str, context: dict) -> dict:
     understanding = understand(state)  # S1
     state["understanding"] = understanding
 
+    # Anchor Guard prerequisite: compute and persist HTTP applicability in route-state.
+    state["route_state"] = {
+        "http_dimension_applicable": compute_http_dimension_applicable(understanding, state)
+    }
+
     memory_hits = retrieve_cross_session_memory(state)
     state["memory_context"] = filter_memory_hits(memory_hits, min_score=0.72)
 
@@ -47,23 +52,33 @@ def run_agent(query: str, context: dict) -> dict:
             draft = synthesize_draft(state)  # S3
 
     anchor_score = compute_anchor_score(state)
-    draft = enforce_anchor_guard_by_score(draft, anchor_score)
+    draft, anchor_guard_result = enforce_anchor_guard_by_score(
+        draft,
+        anchor_score,
+        state["route_state"],
+    )
 
     if should_run_second_pass(state):
         audit = run_second_pass_audit(draft, state.get("diagnosis"), state)  # S4
         audit_valid = is_valid_audit(audit)
 
         if audit_valid and audit.get("audit_completeness") == "full":
-            final_text = merge_draft_with_audit(draft, audit, state)  # S5
+            candidate = merge_draft_with_audit(draft, audit, state)  # S5
         elif audit_valid and audit.get("audit_completeness") == "partial":
-            final_text = merge_partial_salvage(draft, audit, state)  # S5
+            candidate = merge_partial_salvage(draft, audit, state)  # S5
         else:
-            final_text = safe_degrade(draft, reason="invalid_or_partial_audit")
+            candidate = safe_degrade(draft, reason="invalid_or_partial_audit")
     else:
-        final_text = draft  # S5
+        candidate = draft  # S5
 
-    gated = apply_quality_gate(final_text, state)
-    return render_with_contract(gated, state)  # S6
+    executable_artifact = extract_executable_artifact(candidate)
+    if executable_artifact is not None and anchor_guard_result["mode"] != "blocked":
+        quality_gate_result = apply_quality_gate(executable_artifact, state)
+        candidate = apply_quality_gate_result(candidate, quality_gate_result, state)
+    else:
+        quality_gate_result = {"decision": "not_applicable"}
+
+    return render_with_contract(candidate, state, quality_gate_result=quality_gate_result)  # S6
 ```
 
 ## Notes
@@ -71,4 +86,5 @@ def run_agent(query: str, context: dict) -> dict:
 - Modes are `basic`, `deep_thinking`, and `web_search`.
 - Fail states are split into `S_FAIL_RETRYABLE` and `S_FAIL_TERMINAL`.
 - `should_run_second_pass()` uses `second_pass_eligible` guard from state-machine matrix.
+- `apply_quality_gate()` runs on executable artifacts, not post-degradation plain text.
 - Public pseudocode omits private policy constants and local execution internals.

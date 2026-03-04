@@ -88,6 +88,33 @@
 - `0.50 <= score < 0.80`：仅允许伪代码
 - `score >= 0.80`：可进入代码生成（仍需通过 Quality Gate）
 
+## Guard 应用接口契约
+
+`enforce_anchor_guard_by_score()` 的公开契约：
+
+输入：
+
+- `draft_candidate`：结构化草稿对象（`answer_text`、可选 `artifacts[]`、可选 metadata）
+- `anchor_score`：`[0,1]` 浮点数
+- `route_state.http_dimension_applicable`：布尔值
+
+输出：
+
+- `guarded_candidate`：新候选对象（不要求原地修改）
+- `anchor_guard_result`：`{mode, score, missing_anchors[], reasons[]}`
+
+模式映射：
+
+1. `anchor_score < 0.50` -> `mode=blocked`
+2. `0.50 <= anchor_score < 0.80` -> `mode=pseudocode_only`
+3. `anchor_score >= 0.80` -> `mode=executable_eligible`
+
+各模式必须行为：
+
+1. `blocked`：移除可执行产物，替换为 verification-first 指导。
+2. `pseudocode_only`：剥离可执行操作符，仅保留不可执行伪代码。
+3. `executable_eligible`：保留可执行产物，交由后续 Quality Gate 审核。
+
 ## 可复算示例
 
 ### 示例 A：高置信，HTTP 不适用

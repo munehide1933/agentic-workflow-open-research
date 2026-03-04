@@ -1,5 +1,8 @@
 flowchart LR
-    A["User Query + Runtime Context"] --> B["Signal Detection"]
+    A["User Query + Runtime Context"] --> U["Understanding (S1)"]
+    U --> R["Memory Retrieval Sidecar<br/>top_k + min_score"]
+    U --> B["Signal Detection"]
+    R -->|Inject memory_context<br/>(external context only)| B
     B --> C["Evidence Extractor"]
     C --> D["facts[]<br/>source + evidence_span/keys"]
     D --> E["Hypothesis Builder"]
@@ -22,7 +25,8 @@ flowchart LR
     K3 --> L
     K4 --> L
     L --> M{"Audit valid + non-echo?"}
-    M -- "Yes" --> N["Finalize (audited)"]
+    M -- "Yes" --> N["Finalize Candidate"]
     M -- "No" --> O["Safe Degrade / Partial Salvage"]
-    N --> P["Render: status/content/final contract"]
-    O --> P
+    N --> Q["Quality Gate<br/>(executable artifacts only)"]
+    O --> Q
+    Q --> P["Render: status/content/final contract"]

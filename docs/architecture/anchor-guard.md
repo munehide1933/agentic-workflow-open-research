@@ -88,6 +88,33 @@ If none hold, set `http_client=not_applicable` and exclude its weight from denom
 - `0.50 <= score < 0.80`: allow pseudocode only
 - `score >= 0.80`: executable output eligible (must still pass Quality Gate)
 
+## Guard Application Contract
+
+`enforce_anchor_guard_by_score()` public contract:
+
+Input:
+
+- `draft_candidate`: structured draft object (`answer_text`, optional `artifacts[]`, optional metadata)
+- `anchor_score`: float `[0, 1]`
+- `route_state.http_dimension_applicable`: boolean
+
+Output:
+
+- `guarded_candidate`: new candidate object (no in-place mutation requirement)
+- `anchor_guard_result`: `{mode, score, missing_anchors[], reasons[]}`
+
+Mode mapping:
+
+1. `anchor_score < 0.50` -> `mode=blocked`
+2. `0.50 <= anchor_score < 0.80` -> `mode=pseudocode_only`
+3. `anchor_score >= 0.80` -> `mode=executable_eligible`
+
+Required behavior by mode:
+
+1. `blocked`: remove executable artifacts and replace with verification-first guidance.
+2. `pseudocode_only`: strip executable operators, preserve non-executable pseudocode.
+3. `executable_eligible`: preserve executable artifacts for subsequent Quality Gate.
+
 ## Deterministic Examples
 
 ### Example A: High confidence, HTTP not applicable

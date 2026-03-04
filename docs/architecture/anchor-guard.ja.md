@@ -88,6 +88,33 @@
 - `0.50 <= score < 0.80`: 擬似コードのみ許可
 - `score >= 0.80`: 実行可能出力候補（Quality Gate 通過が必要）
 
+## Guard 適用インターフェース契約
+
+`enforce_anchor_guard_by_score()` の公開契約：
+
+入力：
+
+- `draft_candidate`: 構造化ドラフト（`answer_text`、任意 `artifacts[]`、任意 metadata）
+- `anchor_score`: `[0,1]` 浮動小数
+- `route_state.http_dimension_applicable`: boolean
+
+出力：
+
+- `guarded_candidate`: 新しい候補オブジェクト（破壊的更新は必須でない）
+- `anchor_guard_result`: `{mode, score, missing_anchors[], reasons[]}`
+
+モード対応：
+
+1. `anchor_score < 0.50` -> `mode=blocked`
+2. `0.50 <= anchor_score < 0.80` -> `mode=pseudocode_only`
+3. `anchor_score >= 0.80` -> `mode=executable_eligible`
+
+モード別必須動作：
+
+1. `blocked`: 実行可能 artifact を除去し、verification-first ガイダンスへ置換。
+2. `pseudocode_only`: 実行オペレータを除去し、非実行擬似コードのみ残す。
+3. `executable_eligible`: 実行可能 artifact を保持し、後段 Quality Gate に渡す。
+
 ## 再計算可能な例
 
 ### 例 A: 高信頼、HTTP 非適用
