@@ -51,3 +51,7 @@
 
 - [Framework Design, Engineering Thinking, and Customer Problem Fit (EN)](./docs/architecture/framework-design-thinking-and-customer-value.en.md)
 - [框架设计、思考方式与客户价值映射（中文）](./docs/architecture/framework-design-thinking-and-customer-value.zh.md)
+- [Diagnosis Structure（EN）](./docs/papers/diagnosis-structure.evidence-first.en.md)
+- [Diagnosis Structure（日本語版）](./docs/papers/diagnosis-structure.evidence-first.ja.md)
+- [Anchor Guard（EN）](./docs/papers/anchor-guard.reliable-codegen.en.md)
+- [Anchor Guard（日本語版）](./docs/papers/anchor-guard.reliable-codegen.ja.md)

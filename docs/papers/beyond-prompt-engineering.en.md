@@ -158,6 +158,11 @@ Evaluate by behavior, not prose quality:
 - Policy tuning still requires domain-specific calibration.
 - Additional work is needed for formal verification of transition coverage.
 
+## Companion Deep Dives
+
+- [Diagnosis Structure: Evidence-First](./diagnosis-structure.evidence-first.en.md)
+- [Anchor Guard: Reliable Codegen](./anchor-guard.reliable-codegen.en.md)
+
 ## Conclusion
 
 Prompt engineering is necessary but not sufficient for reliable agents.
@@ -165,4 +170,3 @@ A production-grade architecture needs explicit evidence contracts, independent a
 
 The practical lesson is direct:
 if your agent is not state-machine-governed, it is difficult to trust at enterprise scale.
-

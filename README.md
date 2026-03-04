@@ -61,6 +61,10 @@ See [Diagnosis Flow Diagram](./docs/diagrams/diagnosis-structure-flow.mmd).
 
 - English: [Beyond Prompt Engineering](./docs/papers/beyond-prompt-engineering.en.md)
 - Japanese: [Beyond Prompt Engineering（日本語版）](./docs/papers/beyond-prompt-engineering.ja.md)
+- English: [Diagnosis Structure (Evidence-First)](./docs/papers/diagnosis-structure.evidence-first.en.md)
+- Japanese: [Diagnosis Structure（日本語版）](./docs/papers/diagnosis-structure.evidence-first.ja.md)
+- English: [Anchor Guard (Reliable Codegen)](./docs/papers/anchor-guard.reliable-codegen.en.md)
+- Japanese: [Anchor Guard（日本語版）](./docs/papers/anchor-guard.reliable-codegen.ja.md)
 
 ## What Is Implemented Today (No Overclaim)
 

@@ -1,26 +1,28 @@
-flowchart TD
-    A["User Query + Context"] --> B["Signal Detection"]
-    B --> C["Evidence-First Diagnosis"]
-    C --> C1["facts: observable signals"]
-    C --> C2["hypotheses: ranked + confidence"]
-    C --> C3["excluded_hypotheses"]
-    C --> C4["insufficient_evidence flag"]
-    C1 --> D["Draft Synthesis"]
-    C2 --> D
-    C3 --> D
-    C4 --> D
-    D --> E["Second-Pass Audit"]
-    E --> E1["counter_hypotheses"]
-    E --> E2["missing_evidence"]
-    E --> E3["unsafe_recommendations"]
-    E --> E4["structure_inconsistencies"]
-    E1 --> F["Merge Policy"]
-    E2 --> F
-    E3 --> F
-    E4 --> F
-    F --> G{"Audit Valid?"}
-    G -- "yes" --> H["Finalize Answer"]
-    G -- "no" --> I["Safe Degrade / Fallback"]
-    H --> J["Render under contract"]
-    I --> J
-
+flowchart LR
+    A["User Query + Runtime Context"] --> B["Signal Detection"]
+    B --> C["Evidence Extractor"]
+    C --> D["facts[]<br/>source + evidence_span/keys"]
+    D --> E["Hypothesis Builder"]
+    E --> F["hypotheses[]<br/>confidence + executable test"]
+    F --> G["Diagnosis Structure"]
+    D --> G
+    G --> G1["excluded_hypotheses[]"]
+    G --> G2["insufficient_evidence (bool)"]
+    G --> H{"Evidence sufficient?"}
+    H -- "No" --> I["Verification-First Draft<br/>(bounded claims)"]
+    H -- "Yes" --> J["Primary Draft Synthesis"]
+    I --> K["Second-Pass Audit"]
+    J --> K["Second-Pass Audit"]
+    K --> K1["counter_hypotheses[]"]
+    K --> K2["missing_evidence[]"]
+    K --> K3["unsafe_recommendations[]"]
+    K --> K4["structure_inconsistencies[]"]
+    K1 --> L["Merge Policy"]
+    K2 --> L
+    K3 --> L
+    K4 --> L
+    L --> M{"Audit valid + non-echo?"}
+    M -- "Yes" --> N["Finalize (audited)"]
+    M -- "No" --> O["Safe Degrade / Partial Salvage"]
+    N --> P["Render: status/content/final contract"]
+    O --> P
