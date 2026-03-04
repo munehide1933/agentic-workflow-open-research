@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/second-pass-audit.schema.json",
+  "title": "SecondPassAudit",
+  "type": "object",
+  "required": [
+    "counter_hypotheses",
+    "missing_evidence",
+    "unsafe_recommendations",
+    "structure_inconsistencies"
+  ],
+  "properties": {
+    "counter_hypotheses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_evidence": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "unsafe_recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "structure_inconsistencies": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
+

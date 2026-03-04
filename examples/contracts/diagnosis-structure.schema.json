@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/diagnosis-structure.schema.json",
+  "title": "DiagnosisStructure",
+  "type": "object",
+  "required": [
+    "facts",
+    "hypotheses",
+    "excluded_hypotheses",
+    "insufficient_evidence",
+    "required_fields"
+  ],
+  "properties": {
+    "facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fact", "source"],
+        "properties": {
+          "fact": { "type": "string", "minLength": 1 },
+          "evidence_span": { "type": "string" },
+          "evidence_keys": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "source": {
+            "type": "string",
+            "enum": ["log", "user_text", "system_state"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["hypothesis", "confidence", "test", "rank", "is_primary_candidate"],
+        "properties": {
+          "hypothesis": { "type": "string", "minLength": 1 },
+          "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+          "test": { "type": "string", "minLength": 1 },
+          "rank": { "type": "integer", "minimum": 1 },
+          "is_primary_candidate": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "excluded_hypotheses": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "insufficient_evidence": { "type": "boolean" },
+    "required_fields": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}
+
