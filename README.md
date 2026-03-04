@@ -44,7 +44,7 @@ See [Open-Source Boundary](./docs/architecture/open-source-boundary.md).
 - [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
 - [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
 
-## Implemented Capabilities (No Overclaim)
+## Implemented Capabilities
 
 1. Multi-mode routing: `basic / deep_thinking / web_search`
 2. Formal SSE stream contract: `status/content/final/error`

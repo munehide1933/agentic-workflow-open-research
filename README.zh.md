@@ -36,7 +36,7 @@
 - [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
 - [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
 
-## 已实现能力（不夸大）
+## 已实现能力
 
 1. 多模式路由：`basic / deep_thinking / web_search`
 2. SSE 契约化输出：`status/content/final/error`

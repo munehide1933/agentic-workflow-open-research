@@ -1,4 +1,4 @@
-# Framework Design, Engineering Thinking, and Customer Problem Fit (No Overclaim)
+# Framework Design, Engineering Thinking, and Customer Problem Fit
 
 ## 1. Design Intent
 
@@ -98,4 +98,3 @@ Less suitable when:
 
 - only a quick demo is needed
 - automatic high-risk host operations are expected by default
-

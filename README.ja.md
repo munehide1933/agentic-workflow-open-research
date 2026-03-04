@@ -37,7 +37,7 @@
 - [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
 - [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
 
-## 実装済み能力（誇張なし）
+## 実装済み能力
 
 1. ルーティングモード：`basic / deep_thinking / web_search`
 2. SSE 契約化出力：`status/content/final/error`
