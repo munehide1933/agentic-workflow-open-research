@@ -1,0 +1,1 @@
+| `open-research-architect` | Senior Research Architect — 架构文档与学术论文发布 | `skills/open-research-architect/SKILL.md` |

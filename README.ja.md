@@ -83,6 +83,9 @@
 - [Runtime vNext Iteration Plan and Primary Design Goals (EN)](./docs/architecture/runtime-vnext-iteration-plan.md)
 - [Runtime vNext 迭代计划与主要设计目标（中文）](./docs/architecture/runtime-vnext-iteration-plan.zh.md)
 - [Runtime vNext イテレーション計画と主要設計目標（日本語）](./docs/architecture/runtime-vnext-iteration-plan.ja.md)
+- [AgenticAI and Open-Source Capability Alignment (EN)](./docs/architecture/agenticai-opensource-alignment.md)
+- [AgenticAI 与 Open-Source 能力对齐（中文）](./docs/architecture/agenticai-opensource-alignment.zh.md)
+- [AgenticAI と Open-Source の能力整合（日本語）](./docs/architecture/agenticai-opensource-alignment.ja.md)
 
 ## 補足
 
