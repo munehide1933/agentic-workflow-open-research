@@ -66,9 +66,43 @@ Optional log fields:
 
 `error` SSE payload should include public fields only; no secrets or private prompts.
 
-## 7. Acceptance Scenarios
+## 7. Runtime Final Metadata Contract
+
+The final runtime metadata object must expose the following public fields:
+
+- `runtime_boundary`
+- `failure_event`
+- `output_contract`
+- `second_pass.timeout_profile`
+
+These fields are additive-compatible and must not remove legacy public fields in minor revisions.
+
+## 8. Metrics and Trace Baseline
+
+Required metric dimensions:
+
+- `step_latency_ms` (`p50`, `p95`, `p99`)
+- `token_input`, `token_output`
+- `model_cost`
+- `audit_time`
+- `guard_rejection_count`
+- `retry_count`
+- `failure_type_distribution`
+
+Trace hierarchy baseline:
+
+- `agent_run_id`
+- `step_id`
+- `model_call_span`
+- `tool_call_span`
+- `audit_span`
+- `merge_span`
+
+## 9. Acceptance Scenarios
 
 1. Model timeout emits `E_TIMEOUT_STAGE_*` and complete trace tuple.
 2. Schema parsing failure emits `E_SCHEMA_INVALID_PAYLOAD`.
 3. Same-session concurrency conflict emits `E_CONCURRENCY_CONFLICT`.
 4. All error events can be joined by `trace_id` and `run_id`.
+5. Final metadata payload includes `runtime_boundary`, `failure_event`, `output_contract`, and `second_pass.timeout_profile`.
+6. Metrics backend reports latency quantiles (`p50/p95/p99`) per stage.

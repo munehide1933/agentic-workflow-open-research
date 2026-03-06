@@ -55,6 +55,7 @@
 `payload` 选填：
 
 - `channel`：`text | artifact`
+- `source`：用户正文片段来源（`answer | quote`）
 - `artifact_id`：当 `channel=artifact` 时的产物 ID（该场景必填）
 - `chunk_index`：artifact 分片序号
 
@@ -125,6 +126,21 @@
 3. 阶段超时时，若可发送，应先发 `status(code=timeout_warning)`。
 4. 终止超时必须发 `error(error_code=E_TIMEOUT_STAGE_*)`。
 
+### 5.1 用户面顺序与一致性约束
+
+在首个用户可见 `content` 分片发射前，必须先满足如下 `status.payload.code` 顺序：
+
+`mode_selected -> language_locked -> style_mode_locked`
+
+用户正文流 source 白名单：
+
+- 允许：`answer`、`quote`
+- 禁止进入用户正文流：其他任何 source 值
+
+终态一致性约束：
+
+`final.content`（等价于 `final.payload.answer`）`== final_answer_text == persisted_answer`
+
 ## 6. 校验与拒收规则
 
 出现以下任一情况，消费端应拒收或隔离该流：
@@ -136,6 +152,8 @@
 5. 终止事件后仍有新事件。
 6. `content.channel=artifact` 但缺少 `artifact_id`。
 7. 流式 `artifact_id` 未在 `final.payload.artifacts` 回收。
+8. 用户可见正文分片的 `content.payload.source` 不在白名单内。
+9. `final` 答案与持久化终态答案不一致。
 
 ## 7. 版本与兼容
 

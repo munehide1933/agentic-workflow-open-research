@@ -55,6 +55,7 @@
 任意ペイロード：
 
 - `channel`: `text | artifact`
+- `source`: ユーザー本文チャンクの論理ソース（`answer | quote`）
 - `artifact_id`: `channel=artifact` 時の識別子（この場合必須）
 - `chunk_index`: artifact 分割番号
 
@@ -125,6 +126,21 @@
 3. ステージタイムアウト時は可能なら先に `status(code=timeout_warning)` を送る。
 4. 終端タイムアウトは `error(error_code=E_TIMEOUT_STAGE_*)` を必須とする。
 
+### 5.1 ユーザー面順序と整合性制約
+
+最初の user-visible `content` チャンク送出前に、次の `status.payload.code` 順序を満たす必要がある：
+
+`mode_selected -> language_locked -> style_mode_locked`
+
+ユーザー本文ストリーム source allowlist：
+
+- 許可: `answer`, `quote`
+- ユーザー本文へ禁止: 上記以外の source 値
+
+終端整合性制約：
+
+`final.content`（`final.payload.answer` の同義）`== final_answer_text == persisted_answer`
+
 ## 6. バリデーションと拒否条件
 
 次のいずれかが発生したストリームは拒否または隔離対象です。
@@ -136,6 +152,8 @@
 5. 終端後の追加イベント。
 6. `content.channel=artifact` なのに `artifact_id` がない。
 7. ストリームに出た `artifact_id` が `final.payload.artifacts` に存在しない。
+8. ユーザー可視本文の `content.payload.source` が allowlist 外。
+9. `final` の回答と永続化済み終端回答が不一致。
 
 ## 7. バージョンと互換性
 

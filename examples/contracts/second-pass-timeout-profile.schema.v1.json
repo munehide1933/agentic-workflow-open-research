@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/second-pass-timeout-profile.schema.v1.json",
+  "title": "SecondPassTimeoutProfileV1",
+  "description": "Resolved timeout profile for second-pass execution.",
+  "type": "object",
+  "required": [
+    "level",
+    "score",
+    "base_seconds",
+    "resolved_seconds",
+    "max_seconds",
+    "factors"
+  ],
+  "properties": {
+    "level": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "base_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "resolved_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Resolver must ensure resolved_seconds <= max_seconds."
+    },
+    "max_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "factors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["factor", "weight", "delta_seconds"],
+        "properties": {
+          "factor": {
+            "type": "string",
+            "minLength": 1
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0
+          },
+          "delta_seconds": {
+            "type": "number"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "examples": [
+    {
+      "level": "high",
+      "score": 0.79,
+      "base_seconds": 18,
+      "resolved_seconds": 34,
+      "max_seconds": 45,
+      "factors": [
+        {
+          "factor": "diagnosis_complexity",
+          "weight": 0.5,
+          "delta_seconds": 9
+        },
+        {
+          "factor": "audit_risk",
+          "weight": 0.3,
+          "delta_seconds": 7
+        }
+      ]
+    },
+    {
+      "level": "critical",
+      "score": 1,
+      "base_seconds": 30,
+      "resolved_seconds": 60,
+      "max_seconds": 60,
+      "factors": [
+        {
+          "factor": "policy_cap",
+          "weight": 1,
+          "delta_seconds": 30,
+          "note": "cap reached"
+        }
+      ]
+    }
+  ],
+  "additionalProperties": false
+}

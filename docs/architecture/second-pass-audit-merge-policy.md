@@ -9,6 +9,7 @@ This document defines the normative merge policy between draft output and second
 - `draft`: first-pass response candidate
 - `diagnosis`: diagnosis structure (`facts`, `hypotheses`, `excluded_hypotheses`, `insufficient_evidence`, `required_fields`)
 - `audit`: second-pass object (v1 or v2)
+- `timeout_profile`: resolved second-pass timeout profile metadata
 
 ## 3. Audit Contract Versions
 
@@ -27,6 +28,19 @@ This makes v1 unable to represent a partial audit with an empty `counter_hypothe
 3. This effective date is final for the open-research release line.
 4. If partial audit needs empty `counter_hypotheses`, payload MUST use v2.
 5. v1 payload with empty `counter_hypotheses` fails schema and is treated as `invalid`.
+
+### 3.3 Second-Pass Timeout Profile Contract (v1)
+
+The runtime exposes resolved timeout metadata through:
+
+- `level`
+- `score`
+- `base_seconds`
+- `resolved_seconds`
+- `max_seconds`
+- `factors[]`
+
+Contract schema: [`examples/contracts/second-pass-timeout-profile.schema.v1.json`](../../examples/contracts/second-pass-timeout-profile.schema.v1.json)
 
 ## 4. Completeness Inference
 
@@ -113,6 +127,14 @@ Partial salvage is NOT allowed to:
 - Reject audit merge.
 - Trigger safe degrade path (`invalid_or_partial_audit`).
 
+### 6.4 Deterministic Merge Contract
+
+Merge operation must be deterministic:
+
+`merged = merge(draft, challenge, rules)`
+
+If `draft`, `challenge`, and `rules` are identical, `merged` must be identical.
+
 ## 7. Safe Degrade Behavior
 
 When merge is rejected:
@@ -124,7 +146,7 @@ When merge is rejected:
 ## 8. Reference Pseudocode
 
 ```python
-def resolve_second_pass(draft, diagnosis, audit):
+def resolve_second_pass(draft, diagnosis, audit, timeout_profile):
     completeness = get_audit_completeness(audit)
 
     if not schema_valid(audit):
@@ -149,3 +171,5 @@ def resolve_second_pass(draft, diagnosis, audit):
 4. Invalid schema => safe degrade.
 5. v1 with empty `counter_hypotheses` => invalid.
 6. Partial audit without counter hypothesis => must use v2.
+7. Timeout profile cap reached (`resolved_seconds == max_seconds`) => merge path respects capped budget.
+8. Same `draft + challenge + rules` replayed => identical merged output.

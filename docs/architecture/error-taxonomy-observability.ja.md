@@ -66,9 +66,43 @@
 
 SSE `error` ペイロードには公開可能フィールドのみを含め、秘密情報を含めない。
 
-## 7. 受け入れシナリオ
+## 7. Runtime 最終 Metadata 契約
+
+runtime の終端 metadata は次の公開フィールドを必須とする：
+
+- `runtime_boundary`
+- `failure_event`
+- `output_contract`
+- `second_pass.timeout_profile`
+
+これらは追加互換で運用し、minor 更新で既存公開フィールドを削除してはならない。
+
+## 8. メトリクスとトレース基線
+
+必須メトリクス次元：
+
+- `step_latency_ms`（`p50`、`p95`、`p99`）
+- `token_input`、`token_output`
+- `model_cost`
+- `audit_time`
+- `guard_rejection_count`
+- `retry_count`
+- `failure_type_distribution`
+
+トレース階層基線：
+
+- `agent_run_id`
+- `step_id`
+- `model_call_span`
+- `tool_call_span`
+- `audit_span`
+- `merge_span`
+
+## 9. 受け入れシナリオ
 
 1. モデル timeout で `E_TIMEOUT_STAGE_*` と完全なトレース項目を出力。
 2. schema 解析失敗で `E_SCHEMA_INVALID_PAYLOAD` を出力。
 3. 同一セッション競合で `E_CONCURRENCY_CONFLICT` を出力。
 4. 全エラーイベントを `trace_id` + `run_id` で結合できる。
+5. 終端 metadata が `runtime_boundary`、`failure_event`、`output_contract`、`second_pass.timeout_profile` を含む。
+6. メトリクス基盤がステージ単位の遅延分位（`p50/p95/p99`）を出力する。

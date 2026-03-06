@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/schemas/runtime-boundary.schema.v1.json",
+  "title": "RuntimeBoundaryV1",
+  "description": "Public runtime execution safety boundary contract.",
+  "type": "object",
+  "required": [
+    "boundary_id",
+    "boundary_version",
+    "sandbox_mode",
+    "isolation_scope",
+    "allowlisted_tools",
+    "budget",
+    "guard_policy_id",
+    "termination_policy"
+  ],
+  "properties": {
+    "boundary_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "boundary_version": {
+      "type": "string",
+      "pattern": "^v[0-9]+$"
+    },
+    "sandbox_mode": {
+      "type": "string",
+      "enum": ["process", "container", "microvm", "isolate"]
+    },
+    "isolation_scope": {
+      "type": "string",
+      "enum": ["per_step", "per_run"]
+    },
+    "allowlisted_tools": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "denied_action_classes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "budget": {
+      "type": "object",
+      "required": [
+        "token_budget",
+        "tool_call_budget",
+        "latency_budget_ms",
+        "memory_quota_mb",
+        "output_size_limit_bytes"
+      ],
+      "properties": {
+        "token_budget": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "tool_call_budget": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "latency_budget_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "memory_quota_mb": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "output_size_limit_bytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "guard_policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "termination_policy": {
+      "type": "object",
+      "required": ["max_loop_iterations", "on_timeout", "on_out_of_token"],
+      "properties": {
+        "max_loop_iterations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "on_timeout": {
+          "type": "string",
+          "enum": ["terminate", "safe_recovery", "skip_optional_step"]
+        },
+        "on_out_of_token": {
+          "type": "string",
+          "enum": ["terminate", "safe_degrade"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "boundary_id": "rb-prod-default",
+      "boundary_version": "v1",
+      "sandbox_mode": "container",
+      "isolation_scope": "per_step",
+      "allowlisted_tools": ["search_docs", "retrieve_memory"],
+      "denied_action_classes": ["filesystem_write", "system_shell"],
+      "budget": {
+        "token_budget": 32000,
+        "tool_call_budget": 6,
+        "latency_budget_ms": 45000,
+        "memory_quota_mb": 1024,
+        "output_size_limit_bytes": 262144
+      },
+      "guard_policy_id": "guard-policy-v3",
+      "termination_policy": {
+        "max_loop_iterations": 8,
+        "on_timeout": "safe_recovery",
+        "on_out_of_token": "safe_degrade"
+      }
+    },
+    {
+      "boundary_id": "rb-boundary-min",
+      "boundary_version": "v1",
+      "sandbox_mode": "process",
+      "isolation_scope": "per_run",
+      "allowlisted_tools": [],
+      "budget": {
+        "token_budget": 512,
+        "tool_call_budget": 0,
+        "latency_budget_ms": 3000,
+        "memory_quota_mb": 128,
+        "output_size_limit_bytes": 8192
+      },
+      "guard_policy_id": "guard-policy-minimal",
+      "termination_policy": {
+        "max_loop_iterations": 1,
+        "on_timeout": "terminate",
+        "on_out_of_token": "terminate"
+      }
+    }
+  ],
+  "additionalProperties": false
+}

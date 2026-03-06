@@ -9,6 +9,7 @@
 - `draft`：一阶段候选回答
 - `diagnosis`：诊断结构（`facts`、`hypotheses`、`excluded_hypotheses`、`insufficient_evidence`、`required_fields`）
 - `audit`：二阶段审计对象（v1 或 v2）
+- `timeout_profile`：second-pass 解析后的超时 profile 元数据
 
 ## 3. 审计契约版本
 
@@ -27,6 +28,19 @@ v1 schema 中 `counter_hypotheses.minItems = 1` 是历史兼容约束。
 3. 该生效日期是本开源研究发布线的最终日期。
 4. 若 partial audit 需要空的 `counter_hypotheses`，必须使用 v2。
 5. v1 中空 `counter_hypotheses` 会 schema 失败并判为 `invalid`。
+
+### 3.3 Second-Pass Timeout Profile 契约（v1）
+
+runtime 公开的解析后超时元数据字段：
+
+- `level`
+- `score`
+- `base_seconds`
+- `resolved_seconds`
+- `max_seconds`
+- `factors[]`
+
+契约 schema：[`examples/contracts/second-pass-timeout-profile.schema.v1.json`](../../examples/contracts/second-pass-timeout-profile.schema.v1.json)
 
 ## 4. 完整度推断
 
@@ -113,6 +127,14 @@ partial salvage 明确禁止：
 - 拒绝合并。
 - 进入安全降级路径（`invalid_or_partial_audit`）。
 
+### 6.4 确定性合并契约
+
+合并操作必须满足确定性：
+
+`merged = merge(draft, challenge, rules)`
+
+当 `draft`、`challenge`、`rules` 相同，`merged` 必须相同。
+
 ## 7. 安全降级行为
 
 当合并被拒绝时：
@@ -124,7 +146,7 @@ partial salvage 明确禁止：
 ## 8. 参考伪代码
 
 ```python
-def resolve_second_pass(draft, diagnosis, audit):
+def resolve_second_pass(draft, diagnosis, audit, timeout_profile):
     completeness = get_audit_completeness(audit)
 
     if not schema_valid(audit):
@@ -149,3 +171,5 @@ def resolve_second_pass(draft, diagnosis, audit):
 4. schema 无效 => 安全降级。
 5. v1 且 `counter_hypotheses` 为空 => `invalid`。
 6. 无 counter_hypothesis 的 partial audit => 必须使用 v2。
+7. timeout profile 命中上限（`resolved_seconds == max_seconds`）=> 合并路径遵守封顶预算。
+8. 同一 `draft + challenge + rules` 回放 => 产出完全一致的 merged 结果。

@@ -1,4 +1,4 @@
-# Intelligent Agent Runtime（开源研究版）
+# Intelligent Agent Runtime (IAR)（开源研究版）
 
 这个仓库是文档优先的公开版本，重点展示企业级 Agentic Workflow 的可靠性工程方法，而非公开完整运行时代码。
 
@@ -35,6 +35,9 @@
 - [Second-Pass Audit Schema v1](./examples/contracts/second-pass-audit.schema.json)
 - [Second-Pass Audit Schema v2](./examples/contracts/second-pass-audit.schema.v2.json)
 - [SSE Event Schema v1](./examples/contracts/sse-event.schema.v1.json)
+- [Runtime Boundary Schema v1](./examples/contracts/runtime-boundary.schema.v1.json)
+- [Artifact Lifecycle Schema v1](./examples/contracts/artifact-lifecycle.schema.v1.json)
+- [Second-Pass Timeout Profile Schema v1](./examples/contracts/second-pass-timeout-profile.schema.v1.json)
 
 ## 已实现能力
 
@@ -85,6 +88,33 @@
 - [AgenticAI 与 Open-Source 能力对齐（中文）](./docs/architecture/agenticai-opensource-alignment.zh.md)
 - [AgenticAI and Open-Source Capability Alignment (EN)](./docs/architecture/agenticai-opensource-alignment.md)
 - [AgenticAI と Open-Source の能力整合（日本語）](./docs/architecture/agenticai-opensource-alignment.ja.md)
+
+## Runtime 能力扩展主线（IAR / 双阶段契约驱动交付模式）
+
+- [Runtime 能力地图（中文）](./docs/architecture/runtime-capability-map.zh.md)
+- [Runtime Capability Map (EN)](./docs/architecture/runtime-capability-map.md)
+- [Runtime 能力マップ（日本語）](./docs/architecture/runtime-capability-map.ja.md)
+- [Runtime 设计哲学（中文）](./docs/architecture/runtime-design-philosophy.zh.md)
+- [Runtime Design Philosophy (EN)](./docs/architecture/runtime-design-philosophy.md)
+- [Runtime 設計哲学（日本語）](./docs/architecture/runtime-design-philosophy.ja.md)
+- [Agent Pipeline 契约 Profile（中文）](./docs/architecture/agent-pipeline-contract-profile.zh.md)
+- [Agent Pipeline Contract Profile (EN)](./docs/architecture/agent-pipeline-contract-profile.md)
+- [Agent Pipeline 契約 Profile（日本語）](./docs/architecture/agent-pipeline-contract-profile.ja.md)
+- [Deep Thinking 模型治理（中文）](./docs/architecture/deep-thinking-model-governance.zh.md)
+- [Deep Thinking Model Governance (EN)](./docs/architecture/deep-thinking-model-governance.md)
+- [Deep Thinking モデルガバナンス（日本語）](./docs/architecture/deep-thinking-model-governance.ja.md)
+- [Memory 系统运行契约（中文）](./docs/architecture/memory-system-operational-contract.zh.md)
+- [Memory System Operational Contract (EN)](./docs/architecture/memory-system-operational-contract.md)
+- [Memory システム運用契約（日本語）](./docs/architecture/memory-system-operational-contract.ja.md)
+- [Action/Tools 系统契约（中文）](./docs/architecture/action-tools-system-contract.zh.md)
+- [Action and Tools System Contract (EN)](./docs/architecture/action-tools-system-contract.md)
+- [Action/Tools システム契約（日本語）](./docs/architecture/action-tools-system-contract.ja.md)
+- [Execution Safety Envelope Runtime（中文）](./docs/architecture/execution-safety-envelope-runtime.zh.md)
+- [Execution Safety Envelope Runtime (EN)](./docs/architecture/execution-safety-envelope-runtime.md)
+- [Execution Safety Envelope Runtime（日本語）](./docs/architecture/execution-safety-envelope-runtime.ja.md)
+- [Runtime 可靠性机制（中文）](./docs/architecture/runtime-reliability-mechanisms.zh.md)
+- [Runtime Reliability Mechanisms (EN)](./docs/architecture/runtime-reliability-mechanisms.md)
+- [Runtime 信頼性メカニズム（日本語）](./docs/architecture/runtime-reliability-mechanisms.ja.md)
 
 ## 其他说明
 

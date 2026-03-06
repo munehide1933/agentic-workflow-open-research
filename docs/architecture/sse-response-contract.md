@@ -55,6 +55,7 @@ Required payload fields:
 Optional payload fields:
 
 - `channel`: `text | artifact`
+- `source`: logical body source (`answer | quote`) for user-visible text chunks
 - `artifact_id`: identifier when `channel=artifact` (required in that case)
 - `chunk_index`: integer chunk sequence for artifact stream
 
@@ -125,6 +126,21 @@ Additional rules:
 3. A stage timeout should emit `status` with `code=timeout_warning` first when possible.
 4. Terminal timeout must emit `error` with `error_code=E_TIMEOUT_STAGE_*`.
 
+### 5.1 User-Surface Sequencing and Consistency
+
+Before the first user-visible `content` chunk is emitted, the following `status.payload.code` sequence must be observed:
+
+`mode_selected -> language_locked -> style_mode_locked`
+
+User body stream source allowlist:
+
+- allowed: `answer`, `quote`
+- blocked from user body stream: any other source value
+
+Terminal consistency rule:
+
+`final.content` (alias of `final.payload.answer`) `== final_answer_text == persisted_answer`
+
 ## 6. Validation and Rejection Rules
 
 Consumers should reject or quarantine a stream when any of the following occurs:
@@ -136,6 +152,8 @@ Consumers should reject or quarantine a stream when any of the following occurs:
 5. Event appears after terminal.
 6. `content.channel=artifact` without `artifact_id`.
 7. Streamed `artifact_id` missing from `final.payload.artifacts`.
+8. `content.payload.source` not in allowlist for user-visible body stream.
+9. final answer mismatch against persisted terminal answer contract.
 
 ## 7. Compatibility and Versioning
 

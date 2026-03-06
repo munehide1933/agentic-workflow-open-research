@@ -66,9 +66,43 @@
 
 SSE `error` 负载仅允许公开字段，不得包含密钥或私有 prompt 细节。
 
-## 7. 验收场景
+## 7. Runtime 最终 Metadata 契约
+
+runtime 终态 metadata 必须公开以下字段：
+
+- `runtime_boundary`
+- `failure_event`
+- `output_contract`
+- `second_pass.timeout_profile`
+
+这些字段遵循“新增可选字段向后兼容”，minor 版本不得删除既有公开字段。
+
+## 8. 指标与追踪基线
+
+必备指标维度：
+
+- `step_latency_ms`（`p50`、`p95`、`p99`）
+- `token_input`、`token_output`
+- `model_cost`
+- `audit_time`
+- `guard_rejection_count`
+- `retry_count`
+- `failure_type_distribution`
+
+追踪层级基线：
+
+- `agent_run_id`
+- `step_id`
+- `model_call_span`
+- `tool_call_span`
+- `audit_span`
+- `merge_span`
+
+## 9. 验收场景
 
 1. 模型超时输出 `E_TIMEOUT_STAGE_*` 且追踪字段齐全。
 2. schema 解析失败输出 `E_SCHEMA_INVALID_PAYLOAD`。
 3. 同会话并发冲突输出 `E_CONCURRENCY_CONFLICT`。
 4. 全部错误事件可通过 `trace_id` 与 `run_id` 聚合。
+5. 终态 metadata 同时包含 `runtime_boundary`、`failure_event`、`output_contract`、`second_pass.timeout_profile`。
+6. 指标系统能按阶段输出延迟分位（`p50/p95/p99`）。
