@@ -8,3 +8,5 @@ __pycache__/
 # Node
 node_modules/
 
+# Local skills (never publish)
+skills/

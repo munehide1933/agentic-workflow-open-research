@@ -56,6 +56,7 @@ Optional payload fields:
 
 - `channel`: `text | artifact`
 - `source`: logical body source (`answer | quote`) for user-visible text chunks
+- `phase`: stream phase label (for example `draft_delta`, `answer_delta`, `quote_delta`)
 - `artifact_id`: identifier when `channel=artifact` (required in that case)
 - `chunk_index`: integer chunk sequence for artifact stream
 
@@ -136,6 +137,15 @@ User body stream source allowlist:
 
 - allowed: `answer`, `quote`
 - blocked from user body stream: any other source value
+
+Phase-level allowlist for user body stream:
+
+- allowed: `draft_delta`, `answer_delta`, `quote_delta`
+- blocked: `final_delta` and all non-allowlisted phases
+
+Streaming note:
+
+- `initial_analysis` stream content may be collected internally for state, but is not forwarded to user-visible body stream
 
 Terminal consistency rule:
 

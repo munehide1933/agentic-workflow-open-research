@@ -47,6 +47,10 @@ Typical failures:
 7. `synthesis_finalize` (required)
 8. `render` (required)
 
+Routing note tied to current runtime behavior:
+
+- when `interaction_mode=KNOWLEDGE`, `domain=general`, and `initial_analysis` is non-empty, route to `reflection` before synthesis
+
 ### 3.3 User-Surface Emission Gate
 
 Before first user-visible content chunk:
@@ -63,6 +67,12 @@ Output Contract Gate v3.0 invariants:
 - single writer: only `synthesis_finalize` can commit final answer text
 - second-pass is `signals-only`: never stream raw audit text to user body
 - final consistency: `final.content == final_answer_text == persisted_answer`
+
+Streaming visibility gate:
+
+- `initial_analysis` streaming deltas are internal and must not be forwarded to user body
+- user body stream only forwards content phases: `draft_delta | answer_delta | quote_delta`
+- `final_delta` and any non-allowlisted phase must be dropped from user body stream
 
 ## 4. Decision Logic
 
@@ -99,6 +109,10 @@ def run_pipeline(state, stage_specs):
 2. optional stage timeout -> skip with retryable classification
 3. second-pass in `auto` mode -> `confirm_second_pass` action instead of auto execution
 4. untrusted second-pass output -> keep draft answer and suppress audit text from body stream
+5. non-allowlisted content phase in stream -> drop delta and continue run
+6. synthesis merge causes semantic shrink -> invariant gate reverts to draft answer
+7. template/noise leakage in synthesis text -> quarantine raw fragment and keep sanitized body
+8. dangling tail (`->`, `→`, unfinished punctuation) -> tail-completion guard repairs terminal sentence
 
 ## 6. Acceptance Scenarios
 
@@ -114,6 +128,16 @@ def run_pipeline(state, stage_specs):
    - Expected: second pass executes without confirmation pause.
 6. Internal source leak attempt (`audit_delta`):
    - Expected: chunk blocked from user-visible body.
+7. `initial_analysis` streaming emits internal deltas:
+   - Expected: captured for internal state only; not forwarded to user stream.
+8. `interaction_mode=KNOWLEDGE` with `domain=general`:
+   - Expected: route goes to `reflection` before synthesis.
+9. Merge output drops key engineering anchors:
+   - Expected: invariant gate fallback to draft (`fallback=draft`).
+10. Detailed explanation contains template residue:
+   - Expected: noisy fragment removed from body and moved to quarantine fold.
+11. Final sentence ends with dangling continuation marker:
+   - Expected: tail-completion guard outputs a complete terminal sentence.
 
 ## 7. Compatibility and Versioning
 

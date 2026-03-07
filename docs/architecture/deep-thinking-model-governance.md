@@ -50,6 +50,16 @@ Common failure modes:
 | `selection_reason` | array[string] | deterministic reason tags |
 | `checkpoint_ref` | string | checkpoint pointer for replay |
 
+### 3.3 Second-Pass Timeout Profile Binding
+
+Second-pass governance publishes a resolved timeout profile in metadata.
+Current runtime emits:
+
+- `level`: `low | medium | high | extreme`
+- `score`: normalized complexity score (`0..1`)
+- `base_seconds` / `resolved_seconds` / `max_seconds`
+- `factors[]`: compact explanation strings (for example `token:1850`, `domain:DISTRIBUTED+0.20`)
+
 ## 4. Decision Logic
 
 ```python
@@ -112,6 +122,8 @@ Degradation priority:
    - Expected: classify `systemic_failure`; bounded degrade artifact returned.
 7. Negative case, private provider strategy leak in output:
    - Expected: blocked by output contract and sanitized metadata only.
+8. High-complexity second-pass request:
+   - Expected: timeout profile resolves to `high` or `extreme` with explicit factors.
 
 ## 7. Compatibility and Versioning
 

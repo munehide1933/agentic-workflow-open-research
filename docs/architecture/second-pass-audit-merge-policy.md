@@ -135,6 +135,16 @@ Merge operation must be deterministic:
 
 If `draft`, `challenge`, and `rules` are identical, `merged` must be identical.
 
+### 6.5 User-Surface Mode Contract
+
+Current runtime supports three user-surface modes:
+
+- `hidden` (default): no audit section is rendered to user answer
+- `summary`: expose only compact review note
+- `full`: allow explicit audit block when audit is trusted
+
+When safe patching is enabled and audit is trusted, runtime appends only minimal patch lines and keeps the draft body as prefix.
+
 ## 7. Safe Degrade Behavior
 
 When merge is rejected:

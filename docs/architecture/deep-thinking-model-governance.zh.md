@@ -50,6 +50,15 @@
 | `selection_reason` | array[string] | 可确定性复现的原因标签 |
 | `checkpoint_ref` | string | 回放使用的 checkpoint 指针 |
 
+### 3.3 Second-Pass 超时 Profile 绑定
+
+second-pass 治理会在 metadata 中公开解析后的超时 profile。当前 runtime 输出：
+
+- `level`：`low | medium | high | extreme`
+- `score`：归一化复杂度分数（`0..1`）
+- `base_seconds` / `resolved_seconds` / `max_seconds`
+- `factors[]`：紧凑解释字符串（例如 `token:1850`、`domain:DISTRIBUTED+0.20`）
+
 ## 4. 决策逻辑
 
 ```python
@@ -112,6 +121,8 @@ def execute_model_step(step_input, plan, checkpoint_store, replay_mode=False):
    - 预期：分类 `systemic_failure`，返回有界降级产物。
 7. 负例：输出中泄露私有供应策略：
    - 预期：由 output contract 阻断，仅保留脱敏元数据。
+8. 高复杂度 second-pass 请求：
+   - 预期：超时 profile 解析为 `high` 或 `extreme`，并附带明确 factors。
 
 ## 7. 兼容与版本
 

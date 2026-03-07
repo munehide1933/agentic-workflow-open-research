@@ -47,6 +47,10 @@
 7. `synthesis_finalize`（required）
 8. `render`（required）
 
+与当前 runtime 对齐的路由说明：
+
+- 当 `interaction_mode=KNOWLEDGE`、`domain=general` 且 `initial_analysis` 非空时，先进入 `reflection` 再进入 synthesis
+
 ### 3.3 用户面发射门禁
 
 在首个用户可见 content 前必须先发：
@@ -63,6 +67,12 @@ Output Contract Gate v3.0 不变量：
 - 单写者：仅 `synthesis_finalize` 可提交最终答案文本
 - second-pass 仅允许 `signals-only`：禁止原始审计文本进入用户正文流
 - 终态一致性：`final.content == final_answer_text == persisted_answer`
+
+流式可见性门禁：
+
+- `initial_analysis` 的 streaming delta 属于内部信号，不进入用户正文
+- 用户正文仅允许转发 phase：`draft_delta | answer_delta | quote_delta`
+- `final_delta` 与其他非白名单 phase 必须丢弃
 
 ## 4. 决策逻辑
 
@@ -99,6 +109,10 @@ def run_pipeline(state, stage_specs):
 2. optional 阶段超时 -> retryable 分类并跳过
 3. `auto` second-pass -> 返回 `confirm_second_pass`，不自动执行
 4. second-pass 输出不可信 -> 保留 draft，且禁止 audit 文本进入用户正文
+5. 流式分片 phase 不在白名单 -> 丢弃该分片，流程继续
+6. synthesis merge 发生语义收缩 -> invariant gate 回退到 draft
+7. synthesis 文本出现模板噪声泄漏 -> 隔离原始片段并保留清洗后的正文
+8. 尾部出现悬空标记（`->`、`→`、未闭合标点）-> tail-completion guard 修复结尾句
 
 ## 6. 验收场景
 
@@ -114,6 +128,16 @@ def run_pipeline(state, stage_specs):
    - 预期：无需确认，直接执行 second-pass。
 6. 内部 source 泄漏尝试（`audit_delta`）：
    - 预期：该分片不进入用户正文流。
+7. `initial_analysis` 流式阶段产生内部分片：
+   - 预期：仅用于内部状态，不转发到用户流。
+8. `interaction_mode=KNOWLEDGE` 且 `domain=general`：
+   - 预期：在 synthesis 前先走 `reflection`。
+9. merge 输出丢失关键工程锚点：
+   - 预期：invariant gate 回退为 draft（`fallback=draft`）。
+10. 详细说明中包含模板残留：
+   - 预期：噪声片段从正文移除，进入 quarantine 折叠区。
+11. 最终句以悬空续写符结尾：
+   - 预期：tail-completion guard 输出完整终句。
 
 ## 7. 兼容与版本
 

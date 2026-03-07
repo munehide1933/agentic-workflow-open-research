@@ -98,6 +98,12 @@ runtime 终态 metadata 必须公开以下字段：
 - `audit_span`
 - `merge_span`
 
+runtime quality 载荷基线：
+
+- `runtime_quality.stage_snapshots[*]` 至少包含 `stage`、`model_deployment`、`estimated_tokens_in`、`estimated_tokens_out`、`duration_ms`、`flags`
+- `runtime_quality.invariant_gate` 至少包含 `passed`、`reason_codes`、`metrics`、`fallback`
+- `runtime_quality.degradation_flags` 用于记录 run 级降级标记
+
 ## 9. 验收场景
 
 1. 模型超时输出 `E_TIMEOUT_STAGE_*` 且追踪字段齐全。

@@ -42,6 +42,9 @@
 | `failure_event` | object | 规范化失败分类载荷 |
 | `output_contract` | object | 最终输出一致性元数据 |
 | `second_pass.timeout_profile` | object | second-pass 的解析后超时配置 |
+| `runtime_quality.stage_snapshots` | array | 分阶段模型/token/耗时快照 |
+| `runtime_quality.invariant_gate` | object | merge 守卫结果（`passed`、`reason_codes`、`metrics`、`fallback`） |
+| `runtime_quality.degradation_flags` | array | run 级降级标记 |
 
 ### 3.3 Failure Event 契约
 
@@ -65,6 +68,30 @@ artifact/evidence 版本链通过以下不可变字段追踪：
 | `sha1` | string | 不可变内容摘要 |
 | `trace_id` | string | 审计回放追踪绑定 |
 | `message_id` | string | 当产物用户可见时必填 |
+
+### 3.5 Request-Scoped Partial Replay 契约
+
+当前 runtime 的 replay 采用 request 作用域，并只覆盖指定步骤：
+
+- 默认目标步骤：`detailed_analysis`、`synthesis_draft`、`synthesis_merge`
+- 每个目标步骤都有重放次数上限
+- replay journal 仅用于可观测性，不允许驱动行为分支
+
+封闭 replay reason-code 枚举：
+
+- `timeout`
+- `token_overflow`
+- `context_length`
+- `transient_failure`
+- `not_in_target_scope`
+- `max_attempts_exceeded`
+- `unsupported_executor`
+
+snapshot 应用规则：
+
+- authoritative 键可以覆盖状态
+- advisory 键仅限 warning/error/degrade 诊断字段
+- 非 owned 键（如 `query`）禁止被 replay snapshot 覆盖
 
 ## 4. 决策逻辑
 
@@ -131,6 +158,12 @@ runtime 负载治理控制：
    - 预期：保留 draft，challenge 不泄露到正文流。
 8. 负例：回放缺失 checkpoint：
    - 预期：拒绝回放并返回显式完整性错误。
+9. replay 输入仅存在可观测噪声差异：
+   - 预期：fingerprint 保持稳定。
+10. replay 标记为 unsupported：
+   - 预期：replay metadata 返回全零计数与空 journal。
+11. replay snapshot 含非 owned 键：
+   - 预期：应用阶段忽略这些键。
 
 ## 7. 兼容与版本
 

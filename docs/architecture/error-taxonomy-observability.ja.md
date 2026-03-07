@@ -98,6 +98,12 @@ runtime の終端 metadata は次の公開フィールドを必須とする：
 - `audit_span`
 - `merge_span`
 
+runtime quality ペイロード基線：
+
+- `runtime_quality.stage_snapshots[*]` は `stage`、`model_deployment`、`estimated_tokens_in`、`estimated_tokens_out`、`duration_ms`、`flags` を含む
+- `runtime_quality.invariant_gate` は `passed`、`reason_codes`、`metrics`、`fallback` を含む
+- `runtime_quality.degradation_flags` は run レベルの劣化マーカーを保持する
+
 ## 9. 受け入れシナリオ
 
 1. モデル timeout で `E_TIMEOUT_STAGE_*` と完全なトレース項目を出力。

@@ -57,6 +57,10 @@ See [Open-Source Boundary](./docs/architecture/open-source-boundary.md).
 6. Quality Gate with `pass/soft_fail/hard_fail`
 7. Session and memory stack: SQLite + optional Qdrant + rollback semantics
 8. State machine with split fail classes: `S_FAIL_RETRYABLE / S_FAIL_TERMINAL`
+9. Output Contract Gate v3.0: single-writer finalize + source/phase allowlists
+10. Request-scoped partial replay on selected steps (`detailed_analysis/synthesis_draft/synthesis_merge`)
+11. Runtime quality metadata: stage snapshots + invariant gate + degradation flags
+12. Dynamic second-pass timeout profile with surfaced metadata for UI integration
 
 ## Architecture Specifications
 

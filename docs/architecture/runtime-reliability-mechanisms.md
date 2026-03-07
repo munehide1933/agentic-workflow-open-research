@@ -42,6 +42,9 @@ Common failure modes:
 | `failure_event` | object | canonical failure classification payload |
 | `output_contract` | object | final output consistency metadata |
 | `second_pass.timeout_profile` | object | resolved timeout profile for second-pass behavior |
+| `runtime_quality.stage_snapshots` | array | per-stage model/token/latency snapshot |
+| `runtime_quality.invariant_gate` | object | merge guard result (`passed`, `reason_codes`, `metrics`, `fallback`) |
+| `runtime_quality.degradation_flags` | array | run-level degradation markers |
 
 ### 3.3 Failure Event Contract
 
@@ -65,6 +68,30 @@ Artifact/evidence lineage is tracked with immutable version-chain fields:
 | `sha1` | string | immutable content digest |
 | `trace_id` | string | trace binding for audit replay |
 | `message_id` | string | required when artifact visibility is user-facing |
+
+### 3.5 Request-Scoped Partial Replay Contract
+
+Current runtime behavior uses request-scoped replay for selected steps:
+
+- target steps default: `detailed_analysis`, `synthesis_draft`, `synthesis_merge`
+- each target step has bounded replay attempts
+- replay journal is metadata-only and not used as behavior input
+
+Closed replay reason-code enum:
+
+- `timeout`
+- `token_overflow`
+- `context_length`
+- `transient_failure`
+- `not_in_target_scope`
+- `max_attempts_exceeded`
+- `unsupported_executor`
+
+Snapshot apply rule:
+
+- authoritative keys may overwrite state
+- advisory keys are limited to warning/error/degrade diagnostics
+- non-owned keys (for example `query`) must never be overwritten by replay snapshot
 
 ## 4. Decision Logic
 
@@ -131,6 +158,12 @@ Runtime workload controls:
    - Expected: draft retained, challenge not leaked into body stream.
 8. Negative case, checkpoint missing for replay:
    - Expected: replay refused with explicit integrity error.
+9. Replay input fingerprint differs only by observability noise:
+   - Expected: fingerprint remains stable.
+10. Replay is marked unsupported:
+   - Expected: replay metadata returns zero-state counters and empty journal.
+11. Replay snapshot includes non-owned keys:
+   - Expected: non-owned keys are ignored during apply.
 
 ## 7. Compatibility and Versioning
 

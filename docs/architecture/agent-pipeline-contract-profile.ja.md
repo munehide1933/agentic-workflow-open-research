@@ -47,6 +47,10 @@
 7. `synthesis_finalize`（required）
 8. `render`（required）
 
+現行 runtime に合わせたルーティング注記：
+
+- `interaction_mode=KNOWLEDGE` かつ `domain=general` で `initial_analysis` が非空の場合、synthesis の前に `reflection` を実行する
+
 ### 3.3 ユーザー面出力ゲート
 
 最初の user-visible content より前に必須順序：
@@ -63,6 +67,12 @@ Output Contract Gate v3.0 不変条件：
 - single writer: 最終回答テキストを commit できるのは `synthesis_finalize` のみ
 - second-pass は `signals-only`: 生の audit テキストは本文ストリームへ出さない
 - 終端整合性: `final.content == final_answer_text == persisted_answer`
+
+ストリーミング可視性ゲート：
+
+- `initial_analysis` の streaming delta は内部用であり、ユーザー本文へ転送しない
+- ユーザー本文へ転送する phase は `draft_delta | answer_delta | quote_delta` のみ
+- `final_delta` と allowlist 外 phase は破棄する
 
 ## 4. 意思決定ロジック
 
@@ -99,6 +109,10 @@ def run_pipeline(state, stage_specs):
 2. optional ステージ timeout -> retryable として skip
 3. second-pass `auto` -> 自動実行せず `confirm_second_pass` を返す
 4. second-pass が非信頼 -> draft 維持、audit テキストを本文へ出力しない
+5. 非許可 phase のストリーム分片 -> 分片を破棄して run 継続
+6. synthesis merge で意味の縮退が発生 -> invariant gate が draft にフォールバック
+7. synthesis テキストにテンプレート残骸が混入 -> 生断片を隔離し本文はサニタイズ済みのみ保持
+8. 末尾が中断記号（`->`、`→`、未完了句読点）で終わる -> tail-completion guard が終端文を補完
 
 ## 6. 受け入れシナリオ
 
@@ -114,6 +128,16 @@ def run_pipeline(state, stage_specs):
    - 期待：確認待ちなしで second-pass 実行。
 6. 内部 source 漏洩試行（`audit_delta`）：
    - 期待：ユーザー本文ストリームへ出ない。
+7. `initial_analysis` ストリーミングが内部 delta を生成：
+   - 期待：内部状態にのみ反映し、ユーザー本文へは出さない。
+8. `interaction_mode=KNOWLEDGE` かつ `domain=general`：
+   - 期待：synthesis 前に `reflection` へ遷移する。
+9. merge 出力が重要な engineering anchor を欠落：
+   - 期待：invariant gate が draft へフォールバック（`fallback=draft`）。
+10. 詳細説明にテンプレート残留がある：
+   - 期待：ノイズ断片は本文から除去され quarantine 折りたたみへ移動。
+11. 最終文が中断マーカーで終わる：
+   - 期待：tail-completion guard が完結した終端文を出力。
 
 ## 7. 互換性とバージョニング
 

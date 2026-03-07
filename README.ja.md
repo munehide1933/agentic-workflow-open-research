@@ -50,6 +50,10 @@
 6. Quality Gate の三段階判定：`pass/soft_fail/hard_fail`
 7. メモリ層：SQLite + optional Qdrant + run 単位ロールバック
 8. 状態機械 fail 分割：`S_FAIL_RETRYABLE / S_FAIL_TERMINAL`
+9. Output Contract Gate v3.0：single-writer finalize + source/phase allowlist
+10. request スコープ partial replay（`detailed_analysis/synthesis_draft/synthesis_merge`）
+11. runtime quality metadata：stage snapshots + invariant gate + degradation flags
+12. 動的 second-pass timeout profile を UI 向け metadata として公開
 
 ## アーキテクチャ仕様（日中英同期）
 

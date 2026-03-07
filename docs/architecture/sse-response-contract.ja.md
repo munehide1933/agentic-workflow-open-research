@@ -56,6 +56,7 @@
 
 - `channel`: `text | artifact`
 - `source`: ユーザー本文チャンクの論理ソース（`answer | quote`）
+- `phase`: ストリーム段階ラベル（例 `draft_delta`, `answer_delta`, `quote_delta`）
 - `artifact_id`: `channel=artifact` 時の識別子（この場合必須）
 - `chunk_index`: artifact 分割番号
 
@@ -136,6 +137,15 @@
 
 - 許可: `answer`, `quote`
 - ユーザー本文へ禁止: 上記以外の source 値
+
+ユーザー本文ストリーム phase allowlist：
+
+- 許可: `draft_delta`, `answer_delta`, `quote_delta`
+- 禁止: `final_delta` と allowlist 外のすべての phase
+
+ストリーミング注記：
+
+- `initial_analysis` のストリーム内容は内部状態用に収集され得るが、ユーザー本文には転送しない
 
 終端整合性制約：
 

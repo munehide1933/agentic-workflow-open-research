@@ -15,7 +15,7 @@
   "properties": {
     "level": {
       "type": "string",
-      "enum": ["low", "medium", "high", "critical"]
+      "enum": ["low", "medium", "high", "extreme", "critical"]
     },
     "score": {
       "type": "number",
@@ -39,25 +39,33 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "type": "object",
-        "required": ["factor", "weight", "delta_seconds"],
-        "properties": {
-          "factor": {
+        "oneOf": [
+          {
             "type": "string",
             "minLength": 1
           },
-          "weight": {
-            "type": "number",
-            "minimum": 0
-          },
-          "delta_seconds": {
-            "type": "number"
-          },
-          "note": {
-            "type": "string"
+          {
+            "type": "object",
+            "required": ["factor", "weight", "delta_seconds"],
+            "properties": {
+              "factor": {
+                "type": "string",
+                "minLength": 1
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0
+              },
+              "delta_seconds": {
+                "type": "number"
+              },
+              "note": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
           }
-        },
-        "additionalProperties": false
+        ]
       }
     }
   },
@@ -69,31 +77,20 @@
       "resolved_seconds": 34,
       "max_seconds": 45,
       "factors": [
-        {
-          "factor": "diagnosis_complexity",
-          "weight": 0.5,
-          "delta_seconds": 9
-        },
-        {
-          "factor": "audit_risk",
-          "weight": 0.3,
-          "delta_seconds": 7
-        }
+        "token:1850",
+        "domain:DISTRIBUTED+0.20",
+        "diagnosis:structure+0.05"
       ]
     },
     {
-      "level": "critical",
+      "level": "extreme",
       "score": 1,
       "base_seconds": 30,
       "resolved_seconds": 60,
       "max_seconds": 60,
       "factors": [
-        {
-          "factor": "policy_cap",
-          "weight": 1,
-          "delta_seconds": 30,
-          "note": "cap reached"
-        }
+        "token:9200",
+        "policy_cap"
       ]
     }
   ],

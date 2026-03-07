@@ -98,6 +98,12 @@ Trace hierarchy baseline:
 - `audit_span`
 - `merge_span`
 
+Runtime quality payload baseline:
+
+- `runtime_quality.stage_snapshots[*]` includes `stage`, `model_deployment`, `estimated_tokens_in`, `estimated_tokens_out`, `duration_ms`, and `flags`
+- `runtime_quality.invariant_gate` includes `passed`, `reason_codes`, `metrics`, and `fallback`
+- `runtime_quality.degradation_flags` tracks run-level degrade markers
+
 ## 9. Acceptance Scenarios
 
 1. Model timeout emits `E_TIMEOUT_STAGE_*` and complete trace tuple.

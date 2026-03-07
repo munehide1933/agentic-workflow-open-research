@@ -44,6 +44,8 @@ Schema files are versioned when behavior-affecting changes are introduced.
 1. Initial public version published on **March 6, 2026**.
 2. Producers MUST emit all required fields: `level`, `score`, `base_seconds`, `resolved_seconds`, `max_seconds`, `factors`.
 3. Resolver behavior MUST enforce `resolved_seconds <= max_seconds`.
+4. Current runtime emits timeout `level` values up to `extreme` and uses compact string entries in `factors[]`.
+5. Consumers SHOULD accept both string factors and structured factor objects for forward compatibility.
 
 ## Runtime Metadata Coverage
 

@@ -135,6 +135,16 @@ partial salvage 明确禁止：
 
 当 `draft`、`challenge`、`rules` 相同，`merged` 必须相同。
 
+### 6.5 用户面展示模式契约
+
+当前 runtime 支持三种用户面展示模式：
+
+- `hidden`（默认）：不向用户答案渲染审计区块
+- `summary`：仅展示简短复核说明
+- `full`：仅在审计可信时展示显式审计区块
+
+当启用 safe patch 且审计可信时，runtime 只追加最小补丁行，并保持 draft 主体为前缀。
+
 ## 7. 安全降级行为
 
 当合并被拒绝时：

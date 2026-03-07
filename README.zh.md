@@ -49,6 +49,10 @@
 6. Quality Gate 三档决策：`pass/soft_fail/hard_fail`
 7. 记忆体系：SQLite + 可选 Qdrant + run 级回滚
 8. 状态机双终态：`S_FAIL_RETRYABLE / S_FAIL_TERMINAL`
+9. Output Contract Gate v3.0：单写者 finalize + source/phase 白名单
+10. request 作用域 partial replay（`detailed_analysis/synthesis_draft/synthesis_merge`）
+11. runtime quality 元数据：stage snapshots + invariant gate + degradation flags
+12. 动态 second-pass timeout profile，并将元数据暴露给 UI
 
 ## 架构规范文档（中/日/英同步）
 

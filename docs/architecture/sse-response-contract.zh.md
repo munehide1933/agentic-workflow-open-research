@@ -56,6 +56,7 @@
 
 - `channel`：`text | artifact`
 - `source`：用户正文片段来源（`answer | quote`）
+- `phase`：流式阶段标签（例如 `draft_delta`、`answer_delta`、`quote_delta`）
 - `artifact_id`：当 `channel=artifact` 时的产物 ID（该场景必填）
 - `chunk_index`：artifact 分片序号
 
@@ -136,6 +137,15 @@
 
 - 允许：`answer`、`quote`
 - 禁止进入用户正文流：其他任何 source 值
+
+用户正文流的 phase 白名单：
+
+- 允许：`draft_delta`、`answer_delta`、`quote_delta`
+- 禁止：`final_delta` 以及所有非白名单 phase
+
+流式说明：
+
+- `initial_analysis` 的流式内容可用于内部状态拼接，但不能转发到用户正文流
 
 终态一致性约束：
 
