@@ -74,6 +74,44 @@ Output Contract Gate v3.0 不変条件：
 - ユーザー本文へ転送する phase は `draft_delta | answer_delta | quote_delta` のみ
 - `final_delta` と allowlist 外 phase は破棄する
 
+### 3.4 エンドツーエンド Pipeline フロー図
+
+![IAR Pipeline Flow](./assets/runtime-diagrams/runtime-pipeline-flow.png)
+
+この図は現行 runtime 挙動に合わせた可視化で、外部読者の確認導線として使う。
+下の Mermaid はレビューと差分確認のためのテキスト基線として残す。
+
+```mermaid
+flowchart TB
+    A["/api/chat or /api/chat/stream"] --> B["Compose Context (short-term + summary + long-term)"]
+    B --> C["Understanding (required)"]
+    C --> D["Initial Analysis (required)"]
+    D --> E{"Optional Branches"}
+
+    D --> SD["Synthesis Draft (required, replay-enabled)"]
+
+    E --> W["Web Search"]
+    E --> DS["Diagnosis Structure"]
+    E --> R["Reflection"]
+    E --> DA["Detailed Analysis"]
+    DA --> AC["Arch Brain / Code Generation (if code task)"]
+
+    W --> SD
+    DS --> SD
+    R --> SD
+    AC --> SD
+    E --> SD
+
+    SD --> SP{"Second Pass?"}
+    SP -- "yes" --> SPA["Second Pass Audit (optional)"]
+    SPA --> SM["Synthesis Merge (optional, replay-enabled)"]
+    SM --> FA["Final Answer"]
+    SP -- "no" --> UD["Use Draft"]
+    UD --> FA
+
+    FA --> P["Persist message/artifacts + memory update + stream final"]
+```
+
 ## 4. 意思決定ロジック
 
 ```python

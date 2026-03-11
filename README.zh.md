@@ -119,6 +119,7 @@
 - [Runtime 可靠性机制（中文）](./docs/architecture/runtime-reliability-mechanisms.zh.md)
 - [Runtime Reliability Mechanisms (EN)](./docs/architecture/runtime-reliability-mechanisms.md)
 - [Runtime 信頼性メカニズム（日本語）](./docs/architecture/runtime-reliability-mechanisms.ja.md)
+- [Runtime 分层架构图（EN）](./docs/architecture/runtime-layered-architecture.md)
 
 ## 其他说明
 

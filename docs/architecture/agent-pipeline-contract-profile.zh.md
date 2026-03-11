@@ -74,6 +74,44 @@ Output Contract Gate v3.0 不变量：
 - 用户正文仅允许转发 phase：`draft_delta | answer_delta | quote_delta`
 - `final_delta` 与其他非白名单 phase 必须丢弃
 
+### 3.4 端到端 Pipeline 流程图
+
+![IAR Pipeline Flow](./assets/runtime-diagrams/runtime-pipeline-flow.png)
+
+这张图与当前 runtime 行为对齐，给外部读者一个可快速核对的可视化入口。
+下方 Mermaid 保留为文本基线，便于评审和版本 diff。
+
+```mermaid
+flowchart TB
+    A["/api/chat or /api/chat/stream"] --> B["Compose Context (short-term + summary + long-term)"]
+    B --> C["Understanding (required)"]
+    C --> D["Initial Analysis (required)"]
+    D --> E{"Optional Branches"}
+
+    D --> SD["Synthesis Draft (required, replay-enabled)"]
+
+    E --> W["Web Search"]
+    E --> DS["Diagnosis Structure"]
+    E --> R["Reflection"]
+    E --> DA["Detailed Analysis"]
+    DA --> AC["Arch Brain / Code Generation (if code task)"]
+
+    W --> SD
+    DS --> SD
+    R --> SD
+    AC --> SD
+    E --> SD
+
+    SD --> SP{"Second Pass?"}
+    SP -- "yes" --> SPA["Second Pass Audit (optional)"]
+    SPA --> SM["Synthesis Merge (optional, replay-enabled)"]
+    SM --> FA["Final Answer"]
+    SP -- "no" --> UD["Use Draft"]
+    UD --> FA
+
+    FA --> P["Persist message/artifacts + memory update + stream final"]
+```
+
 ## 4. 决策逻辑
 
 ```python

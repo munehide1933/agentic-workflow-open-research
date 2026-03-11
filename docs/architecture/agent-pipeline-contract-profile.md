@@ -74,6 +74,44 @@ Streaming visibility gate:
 - user body stream only forwards content phases: `draft_delta | answer_delta | quote_delta`
 - `final_delta` and any non-allowlisted phase must be dropped from user body stream
 
+### 3.4 End-to-End Pipeline Flow
+
+![IAR Pipeline Flow](./assets/runtime-diagrams/runtime-pipeline-flow.png)
+
+Reference diagram exported from the current runtime flow for external readers.
+The Mermaid block below is kept as a text-diff baseline for review and version control.
+
+```mermaid
+flowchart TB
+    A["/api/chat or /api/chat/stream"] --> B["Compose Context (short-term + summary + long-term)"]
+    B --> C["Understanding (required)"]
+    C --> D["Initial Analysis (required)"]
+    D --> E{"Optional Branches"}
+
+    D --> SD["Synthesis Draft (required, replay-enabled)"]
+
+    E --> W["Web Search"]
+    E --> DS["Diagnosis Structure"]
+    E --> R["Reflection"]
+    E --> DA["Detailed Analysis"]
+    DA --> AC["Arch Brain / Code Generation (if code task)"]
+
+    W --> SD
+    DS --> SD
+    R --> SD
+    AC --> SD
+    E --> SD
+
+    SD --> SP{"Second Pass?"}
+    SP -- "yes" --> SPA["Second Pass Audit (optional)"]
+    SPA --> SM["Synthesis Merge (optional, replay-enabled)"]
+    SM --> FA["Final Answer"]
+    SP -- "no" --> UD["Use Draft"]
+    UD --> FA
+
+    FA --> P["Persist message/artifacts + memory update + stream final"]
+```
+
 ## 4. Decision Logic
 
 ```python

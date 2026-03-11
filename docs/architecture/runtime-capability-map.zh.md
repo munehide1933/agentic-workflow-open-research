@@ -46,6 +46,10 @@
 
 本映射与当前 IAR 系统设计图对齐，并将组件绑定到公开能力主线。
 
+![IAR Full System View](./assets/runtime-diagrams/runtime-full-system-view.png)
+
+该系统图作为当前公开结构的主可视化入口；下表保留为契约化文本视图，便于评审与比对。
+
 | 分层 | 代表组件 | 主要绑定主线 |
 | --- | --- | --- |
 | Frontend | Next.js `Composer`、`Conversation View`、`useAgentChat/useArtifactLibrary` hooks、Web UI 开关 | Agent Pipeline、Reliability |
@@ -110,6 +114,7 @@
 - [Runtime 可靠性机制](./runtime-reliability-mechanisms.zh.md)
 - [AgenticAI 与 Open-Source 能力对齐](./agenticai-opensource-alignment.zh.md)
 - [Runtime vNext 迭代计划与主要设计目标](./runtime-vnext-iteration-plan.zh.md)
+- [Runtime 分层架构图（EN）](./runtime-layered-architecture.md)
 - [SSE 响应契约](./sse-response-contract.zh.md)
 - [错误分类与可观测性规范](./error-taxonomy-observability.zh.md)
 - [Second-Pass Audit 合并策略](./second-pass-audit-merge-policy.zh.md)

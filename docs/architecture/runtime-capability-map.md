@@ -46,6 +46,10 @@ Each track is published as a standalone architecture specification in EN/ZH/JA.
 
 This map aligns with the current IAR system diagram and binds components to public capability tracks.
 
+![IAR Full System View](./assets/runtime-diagrams/runtime-full-system-view.png)
+
+The system image is the source-of-truth visual map; the table below keeps a contract-oriented text view for reviewers.
+
 | Layer | Representative Components | Primary Track Binding |
 | --- | --- | --- |
 | Frontend | Next.js `Composer`, `Conversation View`, `useAgentChat/useArtifactLibrary` hooks, Web UI toggles | Agent Pipeline, Reliability |
@@ -110,6 +114,7 @@ A release candidate is blocked if any item fails:
 - [Runtime Reliability Mechanisms](./runtime-reliability-mechanisms.md)
 - [AgenticAI and Open-Source Capability Alignment](./agenticai-opensource-alignment.md)
 - [Runtime vNext Iteration Plan and Primary Design Goals](./runtime-vnext-iteration-plan.md)
+- [Runtime Layered Architecture Diagram](./runtime-layered-architecture.md)
 - [SSE Response Contract](./sse-response-contract.md)
 - [Error Taxonomy and Observability](./error-taxonomy-observability.md)
 - [Second-Pass Audit Merge Policy](./second-pass-audit-merge-policy.md)

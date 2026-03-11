@@ -46,6 +46,10 @@
 
 このマッピングは現在の IAR システム設計図と整合し、各コンポーネントを公開能力トラックに対応付ける。
 
+![IAR Full System View](./assets/runtime-diagrams/runtime-full-system-view.png)
+
+このシステム図を公開構成の主要ビジュアルとし、下表はレビュー向けの契約テキスト表現として保持する。
+
 | レイヤー | 代表コンポーネント | 主な対応トラック |
 | --- | --- | --- |
 | Frontend | Next.js `Composer`、`Conversation View`、`useAgentChat/useArtifactLibrary` hooks、Web UI トグル | Agent Pipeline、Reliability |
@@ -110,6 +114,7 @@
 - [Runtime 信頼性メカニズム](./runtime-reliability-mechanisms.ja.md)
 - [AgenticAI と Open-Source の能力整合](./agenticai-opensource-alignment.ja.md)
 - [Runtime vNext イテレーション計画と主要設計目標](./runtime-vnext-iteration-plan.ja.md)
+- [Runtime レイヤードアーキテクチャ図（EN）](./runtime-layered-architecture.md)
 - [SSE レスポンス契約](./sse-response-contract.ja.md)
 - [エラー分類と可観測性仕様](./error-taxonomy-observability.ja.md)
 - [Second-Pass Audit マージポリシー](./second-pass-audit-merge-policy.ja.md)
