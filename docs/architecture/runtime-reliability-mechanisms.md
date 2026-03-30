@@ -45,6 +45,8 @@ Common failure modes:
 | `runtime_quality.stage_snapshots` | array | per-stage model/token/latency snapshot |
 | `runtime_quality.invariant_gate` | object | merge guard result (`passed`, `reason_codes`, `metrics`, `fallback`) |
 | `runtime_quality.degradation_flags` | array | run-level degradation markers |
+| `runtime_quality.performance.general_latency_flags_effective.ttft_v2_enabled` | boolean | effective TTFT v2 profile flag |
+| `runtime_quality.performance.first_meaningful_content_ms` | integer | first non-preview meaningful output latency |
 
 ### 3.3 Failure Event Contract
 
@@ -73,7 +75,7 @@ Artifact/evidence lineage is tracked with immutable version-chain fields:
 
 Current runtime behavior uses request-scoped replay for selected steps:
 
-- target steps default: `detailed_analysis`, `synthesis_draft`, `synthesis_merge`
+- target steps default: `synthesis_draft`, `synthesis_merge`
 - each target step has bounded replay attempts
 - replay journal is metadata-only and not used as behavior input
 
@@ -92,6 +94,66 @@ Snapshot apply rule:
 - authoritative keys may overwrite state
 - advisory keys are limited to warning/error/degrade diagnostics
 - non-owned keys (for example `query`) must never be overwritten by replay snapshot
+
+### 3.6 API Idempotency and Session Lifecycle Contract
+
+Public reliability contract at API boundary:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `Idempotency-Key` | string | client-provided deduplication key for `/api/chat` and `/api/chat/stream` |
+| `request_hash` | string | deterministic hash of endpoint + normalized request payload |
+| `idempotency_replay` | boolean | sync replay flag in response payload |
+| `X-Idempotent-Replay` | string | stream replay response header (`true` when replayed) |
+| `idempotency_status` | enum | `in_progress | completed | failed | expired` |
+| `response_payload` | object | cached authoritative terminal payload used for replay |
+
+Deterministic conflict rules:
+
+1. same key + same hash + completed -> replay cached payload
+2. same key + same hash + in-progress -> `409`
+3. same key + different hash -> `409`
+
+Session lifecycle visibility rules:
+
+1. session not found -> `404` (`SESSION_NOT_FOUND`)
+2. session deleted/gone -> `410` (`SESSION_GONE`)
+
+### 3.7 Idempotency Cleanup Scheduler Contract
+
+Periodic idempotency cleanup runs in application lifecycle and enforces stale-record hygiene.
+
+Contract behavior:
+
+1. scheduler runs only when `IDEMPOTENCY_CLEANUP_ENABLED=true`.
+2. each cleanup cycle uses single-host lock semantics.
+3. stale `in_progress` records transition to `expired` by endpoint-specific TTL:
+   - sync endpoints use `IDEMPOTENCY_SYNC_IN_PROGRESS_TTL_SECONDS`
+   - stream endpoints use `IDEMPOTENCY_STREAM_IN_PROGRESS_TTL_SECONDS`
+4. terminal records are deleted when retention exceeds `IDEMPOTENCY_RETENTION_DAYS`.
+5. cleanup counters are monotonic:
+   - `idempotency_cleanup_run_total`
+   - `idempotency_cleanup_expired_total`
+   - `idempotency_cleanup_deleted_total`
+   - `idempotency_cleanup_lock_skip_total`
+   - `idempotency_cleanup_error_total`
+
+### 3.8 Runtime Guardrail Release-Gate Contract
+
+Release gate consumes runtime snapshot + optional baseline snapshot and reports severity classes:
+
+- `blocker`: immediate stop
+- `high`: release-blocking regression
+- `warning`: non-blocking regression
+- `spike_alerts`: acute baseline drift alerts
+
+Key enforcement points:
+
+1. quality fallback rate and compare mismatch rate are evaluated by rollout source (default includes `prod_mirror`).
+2. SSE fallback high severity is enforced only when coverage is above minimum threshold.
+3. idempotency payload corruption and raw error leaks are blocker-class conditions.
+4. sync executor full-timeout triplet (`utilization`, `timeout_count`, `still_running_ratio`) is blocker-class.
+5. release gate output must include computed `signals` payload for auditability.
 
 ## 4. Decision Logic
 
@@ -139,6 +201,8 @@ Runtime workload controls:
 - concurrency caps per tenant and per workflow
 - runtime backpressure triggered by latency and queue depth
 - resource scheduling by token, memory, and execution slot budgets
+- sync executor snapshot exposes backpressure/timeout counters for runtime guardrail release checks
+- release flow consumes guardrail severity output (`blocker/high/warning/spike_alerts`) before promotion
 
 ## 6. Acceptance Scenarios
 
@@ -164,6 +228,20 @@ Runtime workload controls:
    - Expected: replay metadata returns zero-state counters and empty journal.
 11. Replay snapshot includes non-owned keys:
    - Expected: non-owned keys are ignored during apply.
+12. Sync idempotent replay with same key/hash:
+   - Expected: cached payload returned and `idempotency_replay=true`.
+13. Stream idempotent replay with same key/hash:
+   - Expected: terminal replay returned with `X-Idempotent-Replay: true`.
+14. Idempotency key conflict with different payload hash:
+   - Expected: `409` conflict without duplicate pipeline execution.
+15. Deleted session API access:
+   - Expected: request fails with `410` and `SESSION_GONE`.
+16. Periodic idempotency cleanup:
+   - Expected: stale `in_progress` records become `expired`; stale terminal records are deleted by retention.
+17. TTFT v2 flag-gated profile:
+   - Expected: effective stream latency flags are forced on and `first_meaningful_content_ms` is recorded.
+18. Runtime guardrail coverage-aware SSE gate:
+   - Expected: low coverage suppresses SSE fallback `high` and emits warning instead.
 
 ## 7. Compatibility and Versioning
 

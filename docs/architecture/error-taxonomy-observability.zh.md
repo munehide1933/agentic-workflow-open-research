@@ -28,6 +28,7 @@
 - `error_message`
 - `retryable`
 - `phase`
+- `request_id`
 - `trace_id`
 - `run_id`
 - `session_id`
@@ -38,6 +39,7 @@
 
 - `ts`
 - `level`
+- `request_id`
 - `trace_id`
 - `run_id`
 - `session_id`
@@ -58,9 +60,10 @@
 ## 5. 追踪链路规则
 
 1. 单次用户请求映射一个 `run_id`。
-2. `trace_id` 可跨多个服务组件。
-3. 同一次 run 的阶段日志和 SSE 事件必须共享 `trace_id` 与 `run_id`。
-4. 重试必须生成新的 `run_id`，但保留同一 `trace_id`。
+2. HTTP 边界必须保留 `request_id`，并通过响应头 `X-Request-ID` 返回。
+3. `trace_id` 可跨多个服务组件。
+4. 同一次 run 的阶段日志和 SSE 事件必须共享 `trace_id` 与 `run_id`。
+5. 重试必须生成新的 `run_id`，但保留同一 `trace_id`。
 
 ## 6. SSE 错误映射
 
@@ -89,6 +92,26 @@ runtime 终态 metadata 必须公开以下字段：
 - `retry_count`
 - `failure_type_distribution`
 
+rollout 与一致性治理指标：
+
+- `quality_kernel_rollout_calls_total{source,surface}`
+- `quality_kernel_rollout_fallback_total{source,surface,reason}`
+- `quality_kernel_compare_requests_total{source,surface}`
+- `quality_kernel_compare_request_mismatch_total{source,surface}`
+- `quality_kernel_parity_mismatch_total{field}`
+- `quality_kernel_parity_mismatch_by_source_total{source,surface,field}`
+- `ui_stream_frame_builder_eligible_events_total{source,event_type}`
+- `ui_stream_frame_builder_encoded_events_total{source,event_type,engine}`
+- `ui_stream_frame_builder_rust_encoded_events_total{source,event_type}`
+- `ui_stream_frame_builder_fallback_events_total{source,event_type,reason}`
+- `ui_stream_rust_frame_builder_fallback_total{reason}`
+- `first_meaningful_content_ms`（直方图）
+- `idempotency_cleanup_run_total`
+- `idempotency_cleanup_expired_total`
+- `idempotency_cleanup_deleted_total`
+- `idempotency_cleanup_lock_skip_total`
+- `idempotency_cleanup_error_total`
+
 追踪层级基线：
 
 - `agent_run_id`
@@ -103,6 +126,49 @@ runtime quality 载荷基线：
 - `runtime_quality.stage_snapshots[*]` 至少包含 `stage`、`model_deployment`、`estimated_tokens_in`、`estimated_tokens_out`、`duration_ms`、`flags`
 - `runtime_quality.invariant_gate` 至少包含 `passed`、`reason_codes`、`metrics`、`fallback`
 - `runtime_quality.degradation_flags` 用于记录 run 级降级标记
+- `runtime_quality.performance.runtime_timeline[*]` 至少包含 `event`、`stage`、`phase`、`status`、`reason_code`、`ts_ms`、`details`
+- `runtime_quality.performance.transition_records[*]` 至少包含 `from_state`、`to_state`、`event`、`action`、`reason_code`、`ts_ms`、`details`
+- `runtime_quality.arbitration_ledger` 包含确定性仲裁决策投影与信号快照
+- `runtime_quality.arbitration_summary` 包含用户可见仲裁摘要字段
+- `runtime_quality.performance.general_latency_flags_effective.ttft_v2_enabled` 表示 TTFT v2 的有效配置状态
+- `runtime_quality.performance.first_meaningful_content_ms` 记录首个非 preview 有意义正文延迟
+
+### 8.1 Runtime Guardrail 分级契约
+
+runtime guardrail 判定输出使用四个等级：
+
+- `blocker`
+- `high`
+- `warning`
+- `spike_alerts`
+
+guardrail 输出结构：
+
+- `blocker[]`：立即阻断发布的条件
+- `high[]`：阻断发布的质量/可靠性回归
+- `warning[]`：不阻断但必须跟踪的回归
+- `spike_alerts[]`：相对基线快照的突发信号
+- `signals{...}`：用于判定的比率信号载荷
+- `rollout_primary_sources[]`：执行强约束的 rollout source（默认包含 `prod_mirror`）
+
+覆盖率约束规则：
+
+- 仅当 rollout 覆盖率达到阈值（`sse_fallback_eval_min_coverage`）时，才对 SSE fallback 触发 `high`。
+- 覆盖率不足时，输出 `warning`（`sse_fallback_rate_not_enforced_low_coverage`），不升级为 `high`。
+
+### 8.2 Regex Cache 诊断面（可选）
+
+当 Rust quality kernel 扩展可用时，可暴露以下 regex cache 诊断字段：
+
+- `hit_total`
+- `miss_total`
+- `eviction_total`
+- `failure_cache_hit_total`
+- `entry_count`
+- `schema_version`
+- `max_entries`
+
+该诊断面仅用于观测，不能作为 runtime 行为决策输入。
 
 ## 9. 验收场景
 
@@ -112,3 +178,9 @@ runtime quality 载荷基线：
 4. 全部错误事件可通过 `trace_id` 与 `run_id` 聚合。
 5. 终态 metadata 同时包含 `runtime_boundary`、`failure_event`、`output_contract`、`second_pass.timeout_profile`。
 6. 指标系统能按阶段输出延迟分位（`p50/p95/p99`）。
+7. HTTP 错误响应始终包含 `request_id` 与 `X-Request-ID`。
+8. runtime quality 的 performance 载荷包含 `runtime_timeline` 与 `transition_records`。
+9. 仲裁触发的运行同时包含 `arbitration_ledger` 与 `arbitration_summary`。
+10. compare 模式下的 request mismatch rate 必须以 compare request 总量为分母，而不是字段级 mismatch 计数。
+11. 当覆盖率低于最小阈值时，guardrail 必须抑制 SSE fallback 的 `high` 升级。
+12. 幂等清理运行必须输出 run/expired/deleted 计数，且计数更新满足单调语义。

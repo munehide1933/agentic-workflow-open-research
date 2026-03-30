@@ -25,6 +25,46 @@
 3. 每个 `run_id` 只能出现一个终止事件。
 4. 终止事件之后不得再发送任何事件。
 
+### 2.1 传输头与回放 Profile
+
+当前 runtime 的流式传输会暴露以下响应头：
+
+- `x-vercel-ai-ui-message-stream: v1`：UI message stream 投影 profile
+- `X-Idempotent-Replay: true`：同一 `Idempotency-Key` 命中缓存回放时设置
+
+回放规则：
+
+1. 回放必须返回权威终态载荷（`final` 或脱敏后的 `error`），且不重复执行 pipeline 阶段。
+2. 回放流不应发射中间 processing status 分片。
+3. sync 端点回放时，响应体应包含 `idempotency_replay=true`。
+
+### 2.2 Frame Builder 引擎兼容 Profile
+
+runtime 在编码 UI stream 的 `status` 与 `text-delta` 分片时，可以使用默认 Python 编码器或 Rust frame builder。
+
+契约规则：
+
+1. 相同输入下，两种引擎输出的 frame 文本必须字节级等价。
+2. 引擎切换不得改变流协议形状（`start`、`text-start`、`text-delta`、`text-end`、`finish-step`、`finish`、`[DONE]`）。
+3. Rust 路径失败时，必须自动回退到 Python 编码，且不能破坏流终止语义。
+4. 回退原因必须按封闭标签可观测：
+   - `disabled`
+   - `import_error`
+   - `runtime_error`
+   - `invalid_output`
+5. rollout source 标签规范化为：
+   - `staging_replay`
+   - `prod_mirror`
+   - `unknown`
+
+可观测计数器：
+
+- `ui_stream_frame_builder_eligible_events_total{source,event_type}`
+- `ui_stream_frame_builder_encoded_events_total{source,event_type,engine}`
+- `ui_stream_frame_builder_rust_encoded_events_total{source,event_type}`
+- `ui_stream_frame_builder_fallback_events_total{source,event_type,reason}`
+- `ui_stream_rust_frame_builder_fallback_total{reason}`
+
 ## 3. 事件类型
 
 ### 3.1 `status`
@@ -151,6 +191,14 @@
 
 `final.content`（等价于 `final.payload.answer`）`== final_answer_text == persisted_answer`
 
+### 5.2 UI Message 投影说明
+
+当内部 pipeline 事件被投影到 UI message stream 协议时：
+
+1. 仅白名单 phase 会映射为用户可见 `text-delta`
+2. 若流式正文是终态正文的严格前缀，则将缺失后缀补发为额外 `text-delta`
+3. 若流式正文与终态权威正文发生分歧，则发射 `data-final-override`，携带权威终态文本
+
 ## 6. 校验与拒收规则
 
 出现以下任一情况，消费端应拒收或隔离该流：
@@ -164,6 +212,7 @@
 7. 流式 `artifact_id` 未在 `final.payload.artifacts` 回收。
 8. 用户可见正文分片的 `content.payload.source` 不在白名单内。
 9. `final` 答案与持久化终态答案不一致。
+10. 引擎切换导致 frame 编码破坏协议形状或终态闭合语义。
 
 ## 7. 版本与兼容
 
@@ -178,3 +227,13 @@
 3. 早期 schema 失败：`status -> error(E_SCHEMA_INVALID_PAYLOAD)`。
 4. artifact 流：`content(channel=artifact,artifact_id=A1)* -> final(artifacts 含 A1)`。
 5. 负例：重复终止事件。
+6. stream 幂等回放（同 key + 同 hash）：
+   - 预期：仅回放终态事件，且响应头含 `X-Idempotent-Replay: true`。
+7. sync 幂等回放（同 key + 同 hash）：
+   - 预期：响应体包含 `idempotency_replay=true`。
+8. UI 投影中的终态文本分歧：
+   - 预期：发射 `data-final-override`，携带权威终态文本。
+9. Rust frame builder 一致性：
+   - 预期：相同输入下，Rust 与 Python 生成的 `status` / `text-delta` frame 字节级一致。
+10. Rust frame builder 运行时回退：
+   - 预期：编码异常时 stream 仍满足协议，且 fallback 计数递增。

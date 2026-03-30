@@ -25,6 +25,46 @@
 3. 1 run あたり終端イベントは 1 回のみ。
 4. 終端イベント後の追加イベント送信は禁止。
 
+### 2.1 トランスポートヘッダーと replay プロファイル
+
+現行 runtime のストリーム伝送は次のレスポンスヘッダーを公開する：
+
+- `x-vercel-ai-ui-message-stream: v1`（UI message stream 投影プロファイル）
+- `X-Idempotent-Replay: true`（同一 `Idempotency-Key` のキャッシュ replay 時）
+
+replay ルール：
+
+1. replay は権威終端ペイロード（`final` またはサニタイズ済み `error`）を返し、pipeline ステージを再実行しない。
+2. replay ストリームは中間の processing status 分片を送らない。
+3. sync エンドポイントの replay 応答には `idempotency_replay=true` を含める。
+
+### 2.2 Frame Builder エンジン互換プロファイル
+
+runtime は UI stream の `status` と `text-delta` を、既定の Python encoder または Rust frame builder のいずれかでエンコードできる。
+
+契約ルール：
+
+1. 同一入力に対し、両エンジンの出力 frame 文字列は byte 等価であること。
+2. エンジン切替でストリームプロトコル形状（`start`、`text-start`、`text-delta`、`text-end`、`finish-step`、`finish`、`[DONE]`）を変えてはならない。
+3. Rust 経路が失敗した場合、stream 完了セマンティクスを壊さず Python 経路へフォールバックすること。
+4. フォールバック理由は閉じたラベル集合で可観測にする：
+   - `disabled`
+   - `import_error`
+   - `runtime_error`
+   - `invalid_output`
+5. rollout source ラベルは次に正規化する：
+   - `staging_replay`
+   - `prod_mirror`
+   - `unknown`
+
+可観測カウンタ：
+
+- `ui_stream_frame_builder_eligible_events_total{source,event_type}`
+- `ui_stream_frame_builder_encoded_events_total{source,event_type,engine}`
+- `ui_stream_frame_builder_rust_encoded_events_total{source,event_type}`
+- `ui_stream_frame_builder_fallback_events_total{source,event_type,reason}`
+- `ui_stream_rust_frame_builder_fallback_total{reason}`
+
 ## 3. イベント種別
 
 ### 3.1 `status`
@@ -151,6 +191,14 @@
 
 `final.content`（`final.payload.answer` の同義）`== final_answer_text == persisted_answer`
 
+### 5.2 UI Message 投影ノート
+
+内部 pipeline イベントを UI message stream プロトコルへ投影する場合：
+
+1. allowlist 済み phase のみをユーザー可視 `text-delta` に変換する
+2. ストリーム本文が最終本文の厳密な接頭辞である場合、不足サフィックスを追加 `text-delta` として補完する
+3. ストリーム本文と権威最終本文が不一致の場合、`data-final-override` に権威最終本文を載せて送出する
+
 ## 6. バリデーションと拒否条件
 
 次のいずれかが発生したストリームは拒否または隔離対象です。
@@ -164,6 +212,7 @@
 7. ストリームに出た `artifact_id` が `final.payload.artifacts` に存在しない。
 8. ユーザー可視本文の `content.payload.source` が allowlist 外。
 9. `final` の回答と永続化済み終端回答が不一致。
+10. エンジン切替により frame 形状や終端クローズ挙動が変化する。
 
 ## 7. バージョンと互換性
 
@@ -178,3 +227,13 @@
 3. 早期 schema 失敗: `status -> error(E_SCHEMA_INVALID_PAYLOAD)`
 4. artifact ストリーム: `content(channel=artifact,artifact_id=A1)* -> final(artifacts に A1 を含む)`
 5. 負例: 終端イベントの二重送信
+6. stream idempotent replay（同一 key + 同一 hash）：
+   - 期待：終端イベントのみ replay され、`X-Idempotent-Replay: true` が返る。
+7. sync idempotent replay（同一 key + 同一 hash）：
+   - 期待：レスポンス payload に `idempotency_replay=true` を含む。
+8. UI 投影で最終本文が分岐した場合：
+   - 期待：`data-final-override` が権威最終本文を返す。
+9. Rust frame builder parity：
+   - 期待：同一入力では Rust/Python の `status` / `text-delta` frame が byte 等価。
+10. Rust frame builder runtime fallback：
+   - 期待：エンコード実行時エラー時も stream プロトコルは維持され、fallback カウンタが増加する。

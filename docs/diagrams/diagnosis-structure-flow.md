@@ -5,7 +5,7 @@ flowchart LR
     A["User Query + Runtime Context"] --> U["Understanding (S1)"]
     U --> R["Memory Retrieval Sidecar<br/>top_k + min_score"]
     U --> B["Signal Detection"]
-    R -->|Inject memory_context<br/>(external context only)| B
+    R -->|Inject memory_context (external context only)| B
     B --> C["Evidence Extractor"]
     C --> D["facts[]<br/>source + evidence_span/keys"]
     D --> E["Hypothesis Builder"]

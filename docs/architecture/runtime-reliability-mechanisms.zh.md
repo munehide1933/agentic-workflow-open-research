@@ -45,6 +45,8 @@
 | `runtime_quality.stage_snapshots` | array | 分阶段模型/token/耗时快照 |
 | `runtime_quality.invariant_gate` | object | merge 守卫结果（`passed`、`reason_codes`、`metrics`、`fallback`） |
 | `runtime_quality.degradation_flags` | array | run 级降级标记 |
+| `runtime_quality.performance.general_latency_flags_effective.ttft_v2_enabled` | boolean | TTFT v2 有效配置标记 |
+| `runtime_quality.performance.first_meaningful_content_ms` | integer | 首个非 preview 有意义正文延迟 |
 
 ### 3.3 Failure Event 契约
 
@@ -73,7 +75,7 @@ artifact/evidence 版本链通过以下不可变字段追踪：
 
 当前 runtime 的 replay 采用 request 作用域，并只覆盖指定步骤：
 
-- 默认目标步骤：`detailed_analysis`、`synthesis_draft`、`synthesis_merge`
+- 默认目标步骤：`synthesis_draft`、`synthesis_merge`
 - 每个目标步骤都有重放次数上限
 - replay journal 仅用于可观测性，不允许驱动行为分支
 
@@ -92,6 +94,66 @@ snapshot 应用规则：
 - authoritative 键可以覆盖状态
 - advisory 键仅限 warning/error/degrade 诊断字段
 - 非 owned 键（如 `query`）禁止被 replay snapshot 覆盖
+
+### 3.6 API 幂等与会话生命周期契约
+
+API 边界的公开可靠性契约：
+
+| 字段 | 类型 | 含义 |
+| --- | --- | --- |
+| `Idempotency-Key` | string | `/api/chat` 与 `/api/chat/stream` 的客户端去重键 |
+| `request_hash` | string | 端点 + 规范化请求载荷的确定性哈希 |
+| `idempotency_replay` | boolean | sync 回放时的响应体标记 |
+| `X-Idempotent-Replay` | string | stream 回放响应头（回放时为 `true`） |
+| `idempotency_status` | enum | `in_progress | completed | failed | expired` |
+| `response_payload` | object | 用于回放的缓存权威终态载荷 |
+
+确定性冲突规则：
+
+1. 同 key + 同 hash + completed -> 回放缓存载荷
+2. 同 key + 同 hash + in-progress -> `409`
+3. 同 key + 不同 hash -> `409`
+
+会话生命周期可见性规则：
+
+1. session 不存在 -> `404`（`SESSION_NOT_FOUND`）
+2. session 已删除/失效 -> `410`（`SESSION_GONE`）
+
+### 3.7 幂等清理调度器契约
+
+幂等清理由应用生命周期中的周期调度器执行，负责 stale 记录卫生治理。
+
+契约行为：
+
+1. 仅当 `IDEMPOTENCY_CLEANUP_ENABLED=true` 时启用调度器。
+2. 每次清理周期采用单机锁语义。
+3. stale `in_progress` 记录按端点 TTL 转为 `expired`：
+   - sync 端点使用 `IDEMPOTENCY_SYNC_IN_PROGRESS_TTL_SECONDS`
+   - stream 端点使用 `IDEMPOTENCY_STREAM_IN_PROGRESS_TTL_SECONDS`
+4. 超过 `IDEMPOTENCY_RETENTION_DAYS` 的终态记录会被删除。
+5. 清理计数器满足单调递增：
+   - `idempotency_cleanup_run_total`
+   - `idempotency_cleanup_expired_total`
+   - `idempotency_cleanup_deleted_total`
+   - `idempotency_cleanup_lock_skip_total`
+   - `idempotency_cleanup_error_total`
+
+### 3.8 Runtime Guardrail 发布闸门契约
+
+发布闸门消费 runtime 快照与可选 baseline 快照，并输出分级结果：
+
+- `blocker`：立即阻断
+- `high`：阻断发布的回归
+- `warning`：不阻断但需跟踪
+- `spike_alerts`：相对基线的突发漂移告警
+
+关键约束点：
+
+1. quality fallback rate 与 compare mismatch rate 按 rollout source 判定（默认包含 `prod_mirror`）。
+2. SSE fallback 的 `high` 仅在覆盖率超过最小阈值时生效。
+3. idempotency payload 损坏与 raw error 泄漏属于 `blocker`。
+4. sync executor 的 full-timeout 三元组（`utilization`、`timeout_count`、`still_running_ratio`）属于 `blocker`。
+5. 为保证可审计性，闸门输出必须包含计算后的 `signals` 载荷。
 
 ## 4. 决策逻辑
 
@@ -139,6 +201,8 @@ runtime 负载治理控制：
 - 租户与 workflow 两级并发上限
 - 基于延迟和队列深度触发背压
 - 按 token、内存、执行槽进行资源调度
+- sync executor snapshot 暴露背压/超时计数，用于 runtime guardrail 发布检查
+- 发布前必须消费 guardrail 分级输出（`blocker/high/warning/spike_alerts`）再决定是否放行
 
 ## 6. 验收场景
 
@@ -164,6 +228,20 @@ runtime 负载治理控制：
    - 预期：replay metadata 返回全零计数与空 journal。
 11. replay snapshot 含非 owned 键：
    - 预期：应用阶段忽略这些键。
+12. sync 幂等回放（同 key/同 hash）：
+   - 预期：返回缓存载荷，且 `idempotency_replay=true`。
+13. stream 幂等回放（同 key/同 hash）：
+   - 预期：返回终态回放，并携带 `X-Idempotent-Replay: true`。
+14. 幂等键与请求 hash 冲突：
+   - 预期：返回 `409`，且不重复执行 pipeline。
+15. 删除态会话访问 API：
+   - 预期：返回 `410`，错误码 `SESSION_GONE`。
+16. 周期幂等清理：
+   - 预期：stale `in_progress` 转 `expired`，超保留期终态记录被删除。
+17. TTFT v2 flag-gated 配置：
+   - 预期：stream 延迟相关有效开关被强制开启，`first_meaningful_content_ms` 被记录。
+18. Runtime guardrail 覆盖率感知 SSE 闸门：
+   - 预期：覆盖率不足时抑制 SSE fallback 的 `high`，改为 `warning`。
 
 ## 7. 兼容与版本
 

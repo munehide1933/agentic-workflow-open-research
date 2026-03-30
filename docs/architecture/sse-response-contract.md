@@ -25,6 +25,46 @@ Contract rules:
 3. Exactly one terminal event is allowed per run.
 4. After a terminal event, no further events may be emitted.
 
+### 2.1 Transport Headers and Replay Profile
+
+The current runtime stream transport exposes the following response headers:
+
+- `x-vercel-ai-ui-message-stream: v1` for the UI message stream projection profile
+- `X-Idempotent-Replay: true` when a cached stream result is replayed for the same `Idempotency-Key`
+
+Replay rules:
+
+1. Replay must return an authoritative terminal payload (`final` or sanitized `error`) without re-running pipeline stages.
+2. Replay stream should not emit intermediate processing status frames.
+3. Sync endpoint replay should include `idempotency_replay=true` in the response payload.
+
+### 2.2 Frame Builder Engine Compatibility Profile
+
+The runtime may encode `status` and `text-delta` UI stream frames with either the default Python encoder or the Rust frame builder.
+
+Contract rules:
+
+1. For equivalent inputs, emitted frame text must be byte-equivalent across encoder engines.
+2. Engine switch must not change stream protocol shape (`start`, `text-start`, `text-delta`, `text-end`, `finish-step`, `finish`, `[DONE]`).
+3. On Rust path failure, runtime must fallback to Python encoding without breaking stream completion semantics.
+4. Fallback reasons must be observable with closed reason labels:
+   - `disabled`
+   - `import_error`
+   - `runtime_error`
+   - `invalid_output`
+5. Rollout source labels are normalized to:
+   - `staging_replay`
+   - `prod_mirror`
+   - `unknown`
+
+Observability counters:
+
+- `ui_stream_frame_builder_eligible_events_total{source,event_type}`
+- `ui_stream_frame_builder_encoded_events_total{source,event_type,engine}`
+- `ui_stream_frame_builder_rust_encoded_events_total{source,event_type}`
+- `ui_stream_frame_builder_fallback_events_total{source,event_type,reason}`
+- `ui_stream_rust_frame_builder_fallback_total{reason}`
+
 ## 3. Event Types
 
 ### 3.1 `status`
@@ -151,6 +191,14 @@ Terminal consistency rule:
 
 `final.content` (alias of `final.payload.answer`) `== final_answer_text == persisted_answer`
 
+### 5.2 UI Message Projection Notes
+
+When internal pipeline events are projected to the UI message stream protocol:
+
+1. only allowlisted content phases are converted to user-visible `text-delta`
+2. if streamed text is a strict prefix of final text, the missing suffix is appended as extra `text-delta`
+3. if streamed text diverges from final authoritative text, emit `data-final-override` with authoritative final text
+
 ## 6. Validation and Rejection Rules
 
 Consumers should reject or quarantine a stream when any of the following occurs:
@@ -164,6 +212,7 @@ Consumers should reject or quarantine a stream when any of the following occurs:
 7. Streamed `artifact_id` missing from `final.payload.artifacts`.
 8. `content.payload.source` not in allowlist for user-visible body stream.
 9. final answer mismatch against persisted terminal answer contract.
+10. Engine-specific frame encoding changes observable protocol shape or terminal closure behavior.
 
 ## 7. Compatibility and Versioning
 
@@ -178,3 +227,13 @@ Consumers should reject or quarantine a stream when any of the following occurs:
 3. Early schema failure: `status -> error(E_SCHEMA_INVALID_PAYLOAD)`.
 4. Artifact stream: `content(channel=artifact,artifact_id=A1)* -> final(artifacts includes A1)`.
 5. Invalid case (for negative test): duplicate terminal event.
+6. Stream idempotent replay (same key + same hash):
+   - Expected: terminal-only replay with `X-Idempotent-Replay: true`.
+7. Sync idempotent replay (same key + same hash):
+   - Expected: response payload includes `idempotency_replay=true`.
+8. Final text divergence in UI projection:
+   - Expected: `data-final-override` emitted with authoritative final text.
+9. Rust frame builder parity:
+   - Expected: for same inputs, Rust and Python encoded `status` / `text-delta` frames are byte-equivalent.
+10. Rust frame builder runtime fallback:
+   - Expected: on encoder runtime error, stream remains protocol-valid and fallback counters increase.
